@@ -55,7 +55,7 @@ export function StageWorkspace({ state, stage, commit, apply }: Props) {
 
       {stage.type !== "group" && groups.length > 0 && (
         <div className="space-y-1.5">
-          <Label htmlFor="stage-group">Grup</Label>
+          <Label htmlFor="stage-group">Kelompok</Label>
           <select
             id="stage-group"
             className="h-8 w-full rounded-lg border border-input bg-transparent px-2 text-sm"
@@ -69,7 +69,7 @@ export function StageWorkspace({ state, stage, commit, apply }: Props) {
               );
             }}
           >
-            <option value="">(tanpa grup)</option>
+            <option value="">(tanpa kelompok)</option>
             {groups.map((g) => (
               <option key={g.id} value={g.id}>{g.name}</option>
             ))}
@@ -119,7 +119,7 @@ function ItemsEditor({ stageId, items, apply }: { stageId: string; items: ItemRo
 
   return (
     <div className="space-y-2">
-      <Label>Item ({items.length})</Label>
+      <Label>Isi ceklis ({items.length})</Label>
       <ul className="space-y-2">
         {items.map((item, idx) => (
           <li key={item.id} className="space-y-1 rounded-lg border p-2">
@@ -127,7 +127,7 @@ function ItemsEditor({ stageId, items, apply }: { stageId: string; items: ItemRo
               <Input
                 defaultValue={item.title}
                 maxLength={300}
-                aria-label="Judul item"
+                aria-label="Isi ceklis"
                 onBlur={(e) => {
                   const title = e.target.value.trim();
                   if (!title) return (e.target.value = item.title);
@@ -175,7 +175,7 @@ function ItemsEditor({ stageId, items, apply }: { stageId: string; items: ItemRo
           input.value = "";
         }}
       >
-        <Input name="title" placeholder="Tambah item, mis. Paspor" maxLength={300} />
+        <Input name="title" placeholder="Tambah isi, mis. Paspor" maxLength={300} />
         <Button type="submit" variant="outline">Tambah</Button>
       </form>
     </div>

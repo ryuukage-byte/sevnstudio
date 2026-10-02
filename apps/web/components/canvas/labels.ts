@@ -3,15 +3,15 @@ export const typeLabel: Record<string, string> = {
   checklist: "Ceklis",
   task: "Tugas",
   note: "Catatan",
-  group: "Grup",
+  group: "Kelompok",
   review: "Review",
   ai: "AI",
   api: "API",
 };
 
 export const statusLabel: Record<string, string> = {
-  LOCKED: "Terkunci",
-  READY: "Siap",
+  LOCKED: "Menunggu",
+  READY: "Siap dikerjakan",
   TODO: "Belum",
   DOING: "Dikerjakan",
   DONE: "Selesai",

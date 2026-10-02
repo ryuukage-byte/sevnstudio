@@ -20,12 +20,13 @@ export default async function ProjectPage({ params }: PageProps<"/projects/[proj
   return (
     <main className="mx-auto w-full max-w-2xl space-y-8 p-6">
       <header>
-        <Link href="/projects" className="text-sm text-muted-foreground hover:underline">← Semua project</Link>
+        <Link href="/projects" className="text-sm text-muted-foreground hover:underline">← Semua proyek</Link>
         <h1 className="text-2xl font-semibold">{project.name}</h1>
       </header>
 
       <section>
-        <h2 className="mb-2 font-medium">Workflow</h2>
+        <h2 className="font-medium">Alur kerja</h2>
+        <p className="mb-2 text-sm text-muted-foreground">Susunan langkah yang bisa Anda ubah kapan saja.</p>
         <ul className="mb-3 divide-y rounded-lg border">
           {workflows.data?.map((w) => (
             <li key={w.id} className="p-3">
@@ -34,13 +35,14 @@ export default async function ProjectPage({ params }: PageProps<"/projects/[proj
           ))}
         </ul>
         <form action={createWorkflow.bind(null, projectId)} className="flex gap-2">
-          <Input name="name" placeholder="Workflow baru" required maxLength={120} />
+          <Input name="name" placeholder="Alur kerja baru" required maxLength={120} />
           <Button type="submit" variant="outline">Tambah</Button>
         </form>
       </section>
 
       <section>
-        <h2 className="mb-2 font-medium">Run</h2>
+        <h2 className="font-medium">Pengerjaan</h2>
+        <p className="mb-2 text-sm text-muted-foreground">Satu kali mengerjakan sebuah alur, misalnya satu perjalanan. Setiap pengerjaan punya centang sendiri.</p>
         {runs.data?.length ? (
           <ul className="divide-y rounded-lg border">
             {runs.data.map((r) => (
@@ -50,12 +52,13 @@ export default async function ProjectPage({ params }: PageProps<"/projects/[proj
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-muted-foreground">Belum ada run. Mulai dari workflow atau template.</p>
+          <p className="text-sm text-muted-foreground">Belum ada yang dikerjakan. Mulai dari alur kerja atau template.</p>
         )}
       </section>
 
       <section>
-        <h2 className="mb-2 font-medium">Template</h2>
+        <h2 className="font-medium">Template</h2>
+        <p className="mb-2 text-sm text-muted-foreground">Alur kerja yang disimpan agar bisa dipakai lagi dan lagi.</p>
         {templates.data?.length ? (
           <ul className="space-y-2">
             {templates.data.map((t) => (
@@ -63,14 +66,14 @@ export default async function ProjectPage({ params }: PageProps<"/projects/[proj
                 <form action={startRunFromTemplate.bind(null, projectId)} className="flex items-center gap-2">
                   <input type="hidden" name="templateId" value={t.id} />
                   <span className="flex-1 font-medium">{t.name}</span>
-                  <Input name="name" placeholder="Nama run, mis. Trip #2" required maxLength={120} className="max-w-48" />
-                  <Button type="submit" size="sm">Mulai run</Button>
+                  <Input name="name" placeholder="Nama pengerjaan, mis. Trip #2" required maxLength={120} className="max-w-48" />
+                  <Button type="submit" size="sm">Mulai kerjakan</Button>
                 </form>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-muted-foreground">Belum ada template. Simpan dari editor workflow.</p>
+          <p className="text-sm text-muted-foreground">Belum ada template. Simpan dari halaman alur kerja.</p>
         )}
       </section>
     </main>

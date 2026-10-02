@@ -25,11 +25,11 @@ import { typeLabel } from "./labels";
 const nodeTypes = { stage: StageNodeView };
 
 const connectionMessage: Record<ConnectionError, string> = {
-  unknown_stage: "Stage tidak ditemukan.",
-  self_loop: "Stage tidak bisa terhubung ke dirinya sendiri.",
-  group_edge: "Grup tidak bisa dihubungkan; pakai pengelompokan di panel stage.",
-  duplicate: "Koneksi itu sudah ada.",
-  cycle: "Koneksi itu membuat putaran (siklus) di workflow.",
+  unknown_stage: "Langkah tidak ditemukan.",
+  self_loop: "Langkah tidak bisa dihubungkan ke dirinya sendiri.",
+  group_edge: "Kelompok tidak perlu dihubungkan. Masukkan langkah ke kelompok lewat panel di kanan.",
+  duplicate: "Dua langkah itu sudah terhubung.",
+  cycle: "Tidak bisa: hubungan itu membuat langkah saling menunggu tanpa ujung.",
 };
 
 type Selection = { kind: "stage" | "edge"; id: string } | null;
@@ -201,7 +201,7 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, initial }:
         source: e.source_stage_id,
         target: e.target_stage_id,
         selected: selection?.kind === "edge" && selection.id === e.id,
-        label: e.kind === "flow" ? "flow" : undefined,
+        label: e.kind === "flow" ? "bebas" : undefined,
         style: e.kind === "flow" ? { strokeDasharray: "6 4" } : { strokeWidth: 2 },
         markerEnd: { type: MarkerType.ArrowClosed },
       })),
@@ -225,7 +225,7 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, initial }:
   return (
     <div className="flex h-screen flex-col">
       <header className="flex flex-wrap items-center gap-2 border-b px-3 py-2">
-        <Link href={`/projects/${projectId}`} className="text-sm text-muted-foreground hover:underline">← Project</Link>
+        <Link href={`/projects/${projectId}`} className="text-sm text-muted-foreground hover:underline">← Proyek</Link>
         <h1 className="mr-2 font-medium">{workflowName}</h1>
         <Button size="sm" variant="ghost" onClick={doUndo} disabled={!history.past.length}>Urungkan</Button>
         <Button size="sm" variant="ghost" onClick={doRedo} disabled={!history.future.length}>Ulangi</Button>
@@ -244,11 +244,11 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, initial }:
           <Button
             size="sm"
             onClick={() => {
-              const name = window.prompt("Nama run:", `${workflowName} #1`)?.trim();
+              const name = window.prompt("Nama pengerjaan (mis. Trip #1):", `${workflowName} #1`)?.trim();
               if (name) afterFlush(() => startRunFromWorkflow(projectId, workflowId, name));
             }}
           >
-            Mulai run
+            Mulai kerjakan
           </Button>
         </div>
       </header>
@@ -301,7 +301,7 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, initial }:
             <Controls />
             <MiniMap pannable zoomable nodeColor="#94a3b8" maskColor="rgba(0,0,0,0.08)" />
             <Panel position="top-left" className="flex flex-wrap items-center gap-1 rounded-lg border bg-card p-1 shadow-sm">
-              <span className="px-2 text-xs text-muted-foreground">Tambah:</span>
+              <span className="px-2 text-xs text-muted-foreground">Tambah langkah:</span>
               {stageTypes.map((t) => (
                 <Button key={t} size="sm" variant="ghost" onClick={() => addStage(t)}>{typeLabel[t]}</Button>
               ))}
@@ -310,7 +310,7 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, initial }:
           {menu && (
             <div
               role="menu"
-              aria-label="Tambah stage di sini"
+              aria-label="Tambah langkah di sini"
               className="absolute z-10 flex w-40 flex-col rounded-lg border bg-popover p-1 text-popover-foreground shadow-md"
               style={{ left: menu.sx, top: menu.sy }}
             >
@@ -337,9 +337,9 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, initial }:
             <StageWorkspace state={state} stage={selectedStage} commit={commit} apply={run} />
           ) : selectedEdge ? (
             <div className="space-y-3">
-              <div className="text-sm font-medium">Koneksi</div>
+              <div className="text-sm font-medium">Hubungan antar langkah</div>
               <p className="text-xs text-muted-foreground">
-                Blocking: stage hilir terkunci sampai hulu selesai. Flow: hanya menunjukkan hubungan, tidak mengunci.
+                Harus urut: langkah berikutnya baru bisa dikerjakan setelah langkah sebelumnya selesai. Bebas urutan: hanya garis penanda, langkah boleh dikerjakan kapan saja.
               </p>
               <select
                 className="h-8 w-full rounded-lg border border-input bg-transparent px-2 text-sm"
@@ -353,13 +353,13 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, initial }:
                   );
                 }}
               >
-                <option value="blocking">Blocking (mengunci)</option>
-                <option value="flow">Flow (informasi)</option>
+                <option value="blocking">Harus urut (berikutnya menunggu)</option>
+                <option value="flow">Bebas urutan</option>
               </select>
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Pilih stage atau koneksi untuk mengubahnya. Tarik dari titik kanan sebuah stage ke titik kiri stage lain untuk menghubungkan.
+              Klik sebuah langkah atau garis untuk mengubahnya. Untuk menghubungkan dua langkah, tarik dari titik di sisi kanan langkah pertama ke titik di sisi kiri langkah kedua. Klik dua kali di area kosong untuk menambah langkah.
             </p>
           )}
         </aside>

@@ -53,12 +53,12 @@ export function ChecklistMode({ snapshot, items, statuses, blockedBy, progress, 
                 </summary>
                 {blocked && (
                   <p className="mx-3 mb-2 rounded-lg bg-muted p-2 text-sm">
-                    Terkunci. Selesaikan dulu: <strong>{blocked.join(", ")}</strong>.
+                    Belum bisa dikerjakan. Selesaikan dulu: <strong>{blocked.join(", ")}</strong>.
                   </p>
                 )}
                 {stage.type === "checklist" && (
                   <ul className="pb-1">
-                    {own.length === 0 && <li className="px-3 pb-3 text-sm text-muted-foreground">Ceklis ini belum punya item.</li>}
+                    {own.length === 0 && <li className="px-3 pb-3 text-sm text-muted-foreground">Ceklis ini masih kosong.</li>}
                     {own.map((item) => (
                       <li key={item.id}>
                         <label className={cn("flex min-h-12 items-center gap-3 px-3 py-2", blocked ? "opacity-50" : "active:bg-muted")}>

@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Sevn Studio",
-  description: "Visual workflow sandbox",
+  description: "Susun pekerjaan jadi langkah-langkah yang bisa dicentang",
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, title: "Sevn Studio", statusBarStyle: "default" },
 };

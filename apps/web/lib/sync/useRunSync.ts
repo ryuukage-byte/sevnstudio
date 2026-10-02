@@ -51,7 +51,7 @@ export function useRunSync({ runId, initialItems, initialStored }: Args) {
           : await supabase.from("stage_runs").upsert({ run_id: runId, stage_id: op.stageId, status: op.status }, { onConflict: "run_id,stage_id" });
       if (!err) return "ok";
       if (isNetworkError(err.message, navigator.onLine)) return "network";
-      setError("Perubahan ditolak server: " + err.message);
+      setError("Perubahan tidak bisa disimpan: " + err.message);
       return "rejected";
     },
     [supabase, runId],

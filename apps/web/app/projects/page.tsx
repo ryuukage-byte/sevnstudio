@@ -15,13 +15,13 @@ export default async function ProjectsPage() {
   return (
     <main className="mx-auto w-full max-w-2xl p-6">
       <header className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Project</h1>
+        <h1 className="text-2xl font-semibold">Proyek</h1>
         <form action={signOut}>
           <Button variant="outline" size="sm">Keluar</Button>
         </form>
       </header>
       <form action={createProject} className="mb-6 flex gap-2">
-        <Input name="name" placeholder="Nama project, mis. Trip Jepang Nov 2026" required maxLength={120} />
+        <Input name="name" placeholder="Nama proyek, mis. Trip Jepang Nov 2026" required maxLength={120} />
         <Button type="submit">Buat</Button>
       </form>
       {projects?.length ? (
@@ -37,7 +37,7 @@ export default async function ProjectsPage() {
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-muted-foreground">Belum ada project. Buat yang pertama di atas.</p>
+        <p className="text-sm text-muted-foreground">Belum ada proyek. Buat yang pertama di atas.</p>
       )}
     </main>
   );

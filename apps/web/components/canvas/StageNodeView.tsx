@@ -35,7 +35,7 @@ export function StageNodeView({ data, selected }: NodeProps<StageFlowNode>) {
           {typeLabel[data.type] ?? data.type}
         </span>
       </div>
-      {data.groupName && <div className="mt-1 text-xs text-muted-foreground">Grup: {data.groupName}</div>}
+      {data.groupName && <div className="mt-1 text-xs text-muted-foreground">Kelompok: {data.groupName}</div>}
       {data.status && (
         <div className="mt-2 flex items-center gap-2">
           <span className={cn("rounded px-1.5 py-0.5 text-xs", statusClass[data.status] ?? "bg-secondary")}>

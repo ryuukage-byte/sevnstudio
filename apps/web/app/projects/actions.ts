@@ -15,7 +15,7 @@ export async function createProject(formData: FormData) {
   const supabase = await createClient();
   const { data: project, error } = await supabase.from("projects").insert({ name: parsed.data }).select("id").single();
   if (error) throw error;
-  const { error: wfError } = await supabase.from("workflows").insert({ project_id: project.id, name: "Workflow 1" });
+  const { error: wfError } = await supabase.from("workflows").insert({ project_id: project.id, name: "Alur kerja 1" });
   if (wfError) throw wfError;
   redirect(`/projects/${project.id}`);
 }

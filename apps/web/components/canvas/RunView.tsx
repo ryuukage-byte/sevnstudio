@@ -85,7 +85,7 @@ export function RunView({ projectId, runId, runName, snapshot, initialStored, in
             groupName: snapshot.stages.find((g) => g.id === s.parentGroupId)?.name ?? null,
             status: s.type === "group" ? undefined : runView.statuses[s.id],
             progress: runView.progress[s.id],
-            lockReason: blocked ? `Menunggu: ${blocked.join(", ")}` : undefined,
+            lockReason: blocked ? `Selesaikan dulu: ${blocked.join(", ")}` : undefined,
           },
         };
       }),
@@ -99,7 +99,7 @@ export function RunView({ projectId, runId, runName, snapshot, initialStored, in
         id: e.id,
         source: e.source,
         target: e.target,
-        label: e.kind === "flow" ? "flow" : undefined,
+        label: e.kind === "flow" ? "bebas" : undefined,
         style: e.kind === "flow" ? { strokeDasharray: "6 4" } : { strokeWidth: 2 },
         markerEnd: { type: MarkerType.ArrowClosed },
       })),
@@ -114,7 +114,7 @@ export function RunView({ projectId, runId, runName, snapshot, initialStored, in
   return (
     <div className="flex h-dvh flex-col">
       <header className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-3 py-2">
-        <Link href={`/projects/${projectId}`} className="text-sm text-muted-foreground hover:underline" aria-label="Kembali ke project">←</Link>
+        <Link href={`/projects/${projectId}`} className="text-sm text-muted-foreground hover:underline" aria-label="Kembali ke proyek">←</Link>
         <h1 className="min-w-0 flex-1 truncate font-medium">{runName}</h1>
         <div role="tablist" aria-label="Tampilan" className="flex rounded-lg border p-0.5 text-sm">
           {(["list", "canvas"] as const).map((v) => (
@@ -125,7 +125,7 @@ export function RunView({ projectId, runId, runName, snapshot, initialStored, in
               onClick={() => setView(v)}
               className={cn("min-h-8 rounded-md px-3", view === v ? "bg-primary text-primary-foreground" : "text-muted-foreground")}
             >
-              {v === "list" ? "Ceklis" : "Canvas"}
+              {v === "list" ? "Daftar" : "Peta"}
             </button>
           ))}
         </div>
@@ -133,7 +133,7 @@ export function RunView({ projectId, runId, runName, snapshot, initialStored, in
 
       {(!online || pending > 0) && (
         <div role="status" className={cn("border-b px-3 py-1.5 text-sm", online ? "bg-muted" : "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200")}>
-          {online ? `Menyinkronkan ${pending} perubahan…` : `Offline. ${pending ? `${pending} perubahan` : "Perubahan"} akan disinkronkan saat online.`}
+          {online ? `Mengirim ${pending} perubahan…` : `Tidak ada internet. ${pending ? `${pending} perubahan` : "Perubahan Anda"} akan dikirim otomatis saat tersambung lagi.`}
         </div>
       )}
       {error && <div role="alert" className="border-b bg-destructive/10 px-3 py-1.5 text-sm text-destructive">{error}</div>}
@@ -182,7 +182,7 @@ export function RunView({ projectId, runId, runName, snapshot, initialStored, in
 
           <aside className="max-h-[45vh] shrink-0 space-y-4 overflow-y-auto border-t p-3 md:max-h-none md:w-80 md:border-l md:border-t-0">
             {!selected ? (
-              <p className="text-sm text-muted-foreground">Pilih stage untuk mengerjakannya. Stage terkunci menunjukkan stage mana yang ditunggu.</p>
+              <p className="text-sm text-muted-foreground">Klik sebuah langkah untuk mengerjakannya. Langkah yang masih menunggu akan menunjukkan apa yang harus selesai dulu.</p>
             ) : (
               <>
                 <div>
@@ -196,12 +196,12 @@ export function RunView({ projectId, runId, runName, snapshot, initialStored, in
                 </div>
                 {selBlocked && (
                   <p className="rounded-lg border bg-muted p-2 text-sm">
-                    Terkunci. Selesaikan dulu: <strong>{selBlocked.join(", ")}</strong>.
+                    Belum bisa dikerjakan. Selesaikan dulu: <strong>{selBlocked.join(", ")}</strong>.
                   </p>
                 )}
                 {selected.type === "checklist" && (
                   <ul className="space-y-1">
-                    {selItems.length === 0 && <li className="text-sm text-muted-foreground">Ceklis ini belum punya item.</li>}
+                    {selItems.length === 0 && <li className="text-sm text-muted-foreground">Ceklis ini masih kosong.</li>}
                     {selItems.map((item) => (
                       <li key={item.id}>
                         <label className={cn("flex items-center gap-2 rounded p-1.5 text-sm", selBlocked ? "opacity-50" : "cursor-pointer hover:bg-muted")}>
