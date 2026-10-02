@@ -3,7 +3,7 @@
 import "@xyflow/react/dist/style.css";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Background, Controls, MarkerType, MiniMap, ReactFlow, type Edge as FlowEdge } from "@xyflow/react";
+import { Background, ConnectionMode, Controls, MarkerType, MiniMap, ReactFlow, type Edge as FlowEdge } from "@xyflow/react";
 import { checklistStatus, transition, type Snapshot, type StageEvent, type StoredStatus } from "@sevn/engine";
 import { getHandler } from "@sevn/handlers";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { ChecklistMode } from "@/components/run/ChecklistMode";
 import { computeRunView, type RunItemRow } from "@/lib/run/derive";
 import { useRunSync } from "@/lib/sync/useRunSync";
 import { useSyncedNodes } from "@/lib/canvas/useSyncedNodes";
+import { pickHandles } from "@/lib/canvas/handles";
 import { cn } from "@/lib/utils";
 import { StageNodeView, type StageFlowNode } from "./StageNodeView";
 import { statusLabel, statusTone, typeLabel } from "./labels";
@@ -100,15 +101,23 @@ export function RunView({ projectId, projectName, workflowId, runId, runName, sn
 
   const edges = useMemo<FlowEdge[]>(
     () =>
-      snapshot.edges.map((e) => ({
-        id: e.id,
-        source: e.source,
-        target: e.target,
-        label: e.kind === "flow" ? "bebas" : undefined,
-        style: e.kind === "flow" ? { strokeDasharray: "6 4" } : { strokeWidth: 2 },
-        markerEnd: { type: MarkerType.ArrowClosed },
-      })),
-    [snapshot],
+      snapshot.edges.map((e) => {
+        const a = stagesById.get(e.source);
+        const b = stagesById.get(e.target);
+        const at = (s: typeof a) => (s ? (layout[s.id] ?? { x: s.posX, y: s.posY }) : { x: 0, y: 0 });
+        const sides = a && b ? pickHandles(at(a), at(b)) : undefined;
+        return {
+          id: e.id,
+          source: e.source,
+          target: e.target,
+          sourceHandle: sides?.sourceHandle,
+          targetHandle: sides?.targetHandle,
+          label: e.kind === "flow" ? "bebas" : undefined,
+          style: e.kind === "flow" ? { strokeDasharray: "6 4" } : { strokeWidth: 2 },
+          markerEnd: { type: MarkerType.ArrowClosed },
+        };
+      }),
+    [snapshot, stagesById, layout],
   );
 
   const selected = selectedId ? stagesById.get(selectedId) : undefined;
@@ -204,6 +213,7 @@ export function RunView({ projectId, projectName, workflowId, runId, runName, sn
               onNodeClick={(_, n) => setSelectedId(n.id)}
               onPaneClick={() => setSelectedId(null)}
               colorMode="dark"
+              connectionMode={ConnectionMode.Loose}
               fitView
               fitViewOptions={{ maxZoom: 1, padding: 0.25 }}
               proOptions={{ hideAttribution: true }}

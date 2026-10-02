@@ -4,7 +4,7 @@ import "@xyflow/react/dist/style.css";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Background, Controls, MarkerType, MiniMap, Panel, ReactFlow,
+  Background, ConnectionMode, Controls, MarkerType, MiniMap, Panel, ReactFlow,
   type Connection, type Edge as FlowEdge,
 } from "@xyflow/react";
 import { validateConnection, type ConnectionError } from "@sevn/engine";
@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { persistOp } from "@/lib/editor/persist";
 import { useSyncedNodes } from "@/lib/canvas/useSyncedNodes";
+import { pickHandles } from "@/lib/canvas/handles";
 import {
   applyOps, deleteStageOps, emptyHistory, pushCommand, redo, undo,
   type EditorState, type Op, type StageRow,
@@ -213,16 +214,23 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, projectNam
 
   const edges = useMemo<FlowEdge[]>(
     () =>
-      state.edges.map((e) => ({
+      state.edges.map((e) => {
+        const a = state.stages.find((s) => s.id === e.source_stage_id);
+        const b = state.stages.find((s) => s.id === e.target_stage_id);
+        const sides = a && b ? pickHandles({ x: a.pos_x, y: a.pos_y }, { x: b.pos_x, y: b.pos_y }) : undefined;
+        return { e, sides };
+      }).map(({ e, sides }) => ({
         id: e.id,
         source: e.source_stage_id,
         target: e.target_stage_id,
+        sourceHandle: sides?.sourceHandle,
+        targetHandle: sides?.targetHandle,
         selected: selection?.kind === "edge" && selection.id === e.id,
         label: e.kind === "flow" ? "bebas" : undefined,
         style: e.kind === "flow" ? { strokeDasharray: "6 4" } : { strokeWidth: 2 },
         markerEnd: { type: MarkerType.ArrowClosed },
       })),
-    [state.edges, selection],
+    [state.edges, state.stages, selection],
   );
 
   const editingStage = editingId ? state.stages.find((s) => s.id === editingId) : undefined;
@@ -313,6 +321,7 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, projectNam
             }}
             deleteKeyCode={null}
             colorMode="dark"
+            connectionMode={ConnectionMode.Loose}
             fitView
             fitViewOptions={{ maxZoom: 1, padding: 0.25 }}
             proOptions={{ hideAttribution: true }}

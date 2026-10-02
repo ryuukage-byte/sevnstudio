@@ -46,7 +46,14 @@ export function StageNodeView({ data, selected }: NodeProps<StageFlowNode>) {
           </button>
         </NodeToolbar>
       )}
-      {!isGroup && <Handle type="target" position={Position.Left} />}
+      {/* One handle per side. All are "source" handles; the editor runs React Flow in loose connection mode,
+          and edges pick the sides that fit the layout (see lib/canvas/handles.ts). */}
+      {!isGroup && (
+        <>
+          <Handle id="left" type="source" position={Position.Left} />
+          <Handle id="top" type="source" position={Position.Top} />
+        </>
+      )}
       <div className="sv-label mb-1.5">{typeLabel[data.type] ?? data.type}</div>
       <div className="truncate font-[family-name:var(--font-heading)] text-[17px] font-medium leading-tight tracking-[-0.03em]">{data.name}</div>
       {data.groupName && <div className="mt-1.5 truncate text-xs text-muted-foreground">Kelompok: {data.groupName}</div>}
@@ -59,7 +66,12 @@ export function StageNodeView({ data, selected }: NodeProps<StageFlowNode>) {
         </div>
       )}
       {data.lockReason && <div className="mt-2 text-xs leading-snug text-muted-foreground">{data.lockReason}</div>}
-      {!isGroup && <Handle type="source" position={Position.Right} />}
+      {!isGroup && (
+        <>
+          <Handle id="right" type="source" position={Position.Right} />
+          <Handle id="bottom" type="source" position={Position.Bottom} />
+        </>
+      )}
     </div>
   );
 }

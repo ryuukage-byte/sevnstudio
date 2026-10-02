@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageHero, PageShell, SectionTitle } from "@/components/app/Page";
+import { PresetGallery } from "@/components/app/PresetGallery";
+import { presets } from "@/lib/presets/data";
 import { createClient } from "@/lib/supabase/server";
 import { createWorkflow, startRunFromTemplate } from "../actions";
 
@@ -77,6 +79,15 @@ export default async function ProjectPage({ params }: PageProps<"/projects/[proj
           ) : (
             <div className="sv-empty">Belum ada yang dikerjakan. Mulai dari template di bawah, atau dari halaman alur kerja.</div>
           )}
+        </section>
+
+        <section>
+          <SectionTitle
+            title="Preset siap pakai"
+            hint="Alur kerja yang sudah disusun. Pakai langsung, atau salin dulu lalu ubah sesuai kebutuhan Anda."
+            count={presets.length}
+          />
+          <PresetGallery projectId={projectId} presets={presets} />
         </section>
 
         <section>

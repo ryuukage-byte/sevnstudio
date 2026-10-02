@@ -6,8 +6,61 @@ import { z } from "zod";
 import { buildSnapshot, snapshotSchema } from "@sevn/engine";
 import { createClient } from "@/lib/supabase/server";
 import { loadDefinition } from "@/lib/definition";
+import { compilePreset, snapshotToRows } from "@/lib/presets/compile";
+import { getPreset } from "@/lib/presets/data";
 
 const name = z.string().trim().min(1).max(120);
+
+/** Starts a run straight from a built-in preset (no need to copy it first). */
+export async function startRunFromPreset(projectId: string, presetKey: string, formData: FormData) {
+  const preset = getPreset(presetKey);
+  const parsed = name.safeParse(formData.get("name"));
+  if (!preset || !parsed.success) return;
+  const supabase = await createClient();
+  const snapshot = compilePreset(preset, () => crypto.randomUUID());
+  const { data, error } = await supabase.rpc("create_run", {
+    p_project_id: projectId,
+    p_name: parsed.data,
+    p_snapshot: snapshot,
+    p_workflow_id: null,
+    p_template_id: null,
+  });
+  if (error) throw error;
+  redirect(`/projects/${projectId}/runs/${data}`);
+}
+
+/** Copies a built-in preset into the project as an editable workflow. */
+export async function copyPresetToWorkflow(projectId: string, presetKey: string) {
+  const preset = getPreset(presetKey);
+  if (!preset) return;
+  const supabase = await createClient();
+  const { data: workflow, error } = await supabase
+    .from("workflows")
+    .insert({ project_id: projectId, name: preset.title })
+    .select("id")
+    .single();
+  if (error) throw error;
+
+  const rows = snapshotToRows(compilePreset(preset, () => crypto.randomUUID()), workflow.id as string);
+  const groups = rows.stages.filter((s) => s.type === "group");
+  const others = rows.stages.filter((s) => s.type !== "group");
+  // Groups first (a stage's parent group must already exist), then stages, links and items.
+  for (const [table, batch] of [
+    ["stages", groups],
+    ["stages", others],
+    ["stage_connections", rows.edges],
+    ["items", rows.items],
+  ] as const) {
+    if (!batch.length) continue;
+    const { error: insertError } = await supabase.from(table).insert(batch as never);
+    if (insertError) {
+      // Do not leave a half-built workflow behind.
+      await supabase.from("workflows").delete().eq("id", workflow.id);
+      throw insertError;
+    }
+  }
+  redirect(`/projects/${projectId}/workflows/${workflow.id}`);
+}
 
 export async function createProject(formData: FormData) {
   const parsed = name.safeParse(formData.get("name"));
