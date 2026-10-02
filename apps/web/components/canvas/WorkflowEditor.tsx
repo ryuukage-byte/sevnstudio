@@ -5,13 +5,14 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Background, Controls, MarkerType, MiniMap, Panel, ReactFlow,
-  type Connection, type Edge as FlowEdge, type NodeChange,
+  type Connection, type Edge as FlowEdge,
 } from "@xyflow/react";
 import { validateConnection, type ConnectionError } from "@sevn/engine";
 import { getHandler, stageTypes, type StageType } from "@sevn/handlers";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { persistOp } from "@/lib/editor/persist";
+import { useSyncedNodes } from "@/lib/canvas/useSyncedNodes";
 import {
   applyOps, deleteStageOps, emptyHistory, pushCommand, redo, undo,
   type EditorState, type Op, type StageRow,
@@ -45,7 +46,6 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, initial }:
   const [state, setState] = useState(initial);
   const [history, setHistory] = useState(emptyHistory);
   const [selection, setSelection] = useState<Selection>(null);
-  const [dragPos, setDragPos] = useState<Record<string, { x: number; y: number }>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [saveError, setSaveError] = useState(false);
   const [menu, setMenu] = useState<{ sx: number; sy: number; fx: number; fy: number } | null>(null);
@@ -177,36 +177,36 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, initial }:
     return () => window.removeEventListener("keydown", onKey);
   }, [doUndo, doRedo, deleteSelection]);
 
-  const nodes: StageFlowNode[] = state.stages.map((s) => ({
-    id: s.id,
-    type: "stage",
-    position: dragPos[s.id] ?? { x: s.pos_x, y: s.pos_y },
-    selected: selection?.kind === "stage" && selection.id === s.id,
-    data: {
-      name: s.name,
-      type: s.type,
-      groupName: state.stages.find((g) => g.id === s.parent_group_id)?.name ?? null,
-    },
-  }));
+  const baseNodes = useMemo<StageFlowNode[]>(
+    () =>
+      state.stages.map((s) => ({
+        id: s.id,
+        type: "stage",
+        position: { x: s.pos_x, y: s.pos_y },
+        selected: selection?.kind === "stage" && selection.id === s.id,
+        data: {
+          name: s.name,
+          type: s.type,
+          groupName: state.stages.find((g) => g.id === s.parent_group_id)?.name ?? null,
+        },
+      })),
+    [state.stages, selection],
+  );
+  const [nodes, onNodesChange] = useSyncedNodes(baseNodes);
 
-  const edges: FlowEdge[] = state.edges.map((e) => ({
-    id: e.id,
-    source: e.source_stage_id,
-    target: e.target_stage_id,
-    selected: selection?.kind === "edge" && selection.id === e.id,
-    label: e.kind === "flow" ? "flow" : undefined,
-    style: e.kind === "flow" ? { strokeDasharray: "6 4" } : { strokeWidth: 2 },
-    markerEnd: { type: MarkerType.ArrowClosed },
-  }));
-
-  const onNodesChange = (changes: NodeChange<StageFlowNode>[]) => {
-    for (const ch of changes) {
-      if (ch.type === "position" && ch.position) {
-        const pos = ch.position;
-        setDragPos((p) => ({ ...p, [ch.id]: pos }));
-      }
-    }
-  };
+  const edges = useMemo<FlowEdge[]>(
+    () =>
+      state.edges.map((e) => ({
+        id: e.id,
+        source: e.source_stage_id,
+        target: e.target_stage_id,
+        selected: selection?.kind === "edge" && selection.id === e.id,
+        label: e.kind === "flow" ? "flow" : undefined,
+        style: e.kind === "flow" ? { strokeDasharray: "6 4" } : { strokeWidth: 2 },
+        markerEnd: { type: MarkerType.ArrowClosed },
+      })),
+    [state.edges, selection],
+  );
 
   const selectedStage = selection?.kind === "stage" ? state.stages.find((s) => s.id === selection.id) : undefined;
   const selectedEdge = selection?.kind === "edge" ? state.edges.find((e) => e.id === selection.id) : undefined;
@@ -287,7 +287,6 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, initial }:
             }}
             onNodeDragStop={(_, n) => {
               const prev = stateRef.current.stages.find((s) => s.id === n.id);
-              setDragPos((p) => Object.fromEntries(Object.entries(p).filter(([k]) => k !== n.id)));
               if (!prev || (prev.pos_x === n.position.x && prev.pos_y === n.position.y)) return;
               commit(
                 "move",

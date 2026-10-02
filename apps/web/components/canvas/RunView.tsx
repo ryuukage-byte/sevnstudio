@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ChecklistMode } from "@/components/run/ChecklistMode";
 import { computeRunView, type RunItemRow } from "@/lib/run/derive";
 import { useRunSync } from "@/lib/sync/useRunSync";
+import { useSyncedNodes } from "@/lib/canvas/useSyncedNodes";
 import { cn } from "@/lib/utils";
 import { StageNodeView, type StageFlowNode } from "./StageNodeView";
 import { statusClass, statusLabel, typeLabel } from "./labels";
@@ -67,34 +68,43 @@ export function RunView({ projectId, runId, runName, snapshot, initialStored, in
     if (result.ok) setStageStatus(stageId, result.status);
   };
 
-  const nodes: StageFlowNode[] = snapshot.stages.map((s) => {
-    const blocked = runView.blockedBy[s.id];
-    return {
-      id: s.id,
-      type: "stage",
-      position: layout[s.id] ?? { x: s.posX, y: s.posY },
-      selected: s.id === selectedId,
-      draggable: true,
-      connectable: false,
-      data: {
-        name: s.name,
-        type: s.type,
-        groupName: snapshot.stages.find((g) => g.id === s.parentGroupId)?.name ?? null,
-        status: s.type === "group" ? undefined : runView.statuses[s.id],
-        progress: runView.progress[s.id],
-        lockReason: blocked ? `Menunggu: ${blocked.join(", ")}` : undefined,
-      },
-    };
-  });
+  const baseNodes = useMemo<StageFlowNode[]>(
+    () =>
+      snapshot.stages.map((s) => {
+        const blocked = runView.blockedBy[s.id];
+        return {
+          id: s.id,
+          type: "stage",
+          position: layout[s.id] ?? { x: s.posX, y: s.posY },
+          selected: s.id === selectedId,
+          draggable: true,
+          connectable: false,
+          data: {
+            name: s.name,
+            type: s.type,
+            groupName: snapshot.stages.find((g) => g.id === s.parentGroupId)?.name ?? null,
+            status: s.type === "group" ? undefined : runView.statuses[s.id],
+            progress: runView.progress[s.id],
+            lockReason: blocked ? `Menunggu: ${blocked.join(", ")}` : undefined,
+          },
+        };
+      }),
+    [snapshot, layout, selectedId, runView],
+  );
+  const [nodes, onNodesChange] = useSyncedNodes(baseNodes);
 
-  const edges: FlowEdge[] = snapshot.edges.map((e) => ({
-    id: e.id,
-    source: e.source,
-    target: e.target,
-    label: e.kind === "flow" ? "flow" : undefined,
-    style: e.kind === "flow" ? { strokeDasharray: "6 4" } : { strokeWidth: 2 },
-    markerEnd: { type: MarkerType.ArrowClosed },
-  }));
+  const edges = useMemo<FlowEdge[]>(
+    () =>
+      snapshot.edges.map((e) => ({
+        id: e.id,
+        source: e.source,
+        target: e.target,
+        label: e.kind === "flow" ? "flow" : undefined,
+        style: e.kind === "flow" ? { strokeDasharray: "6 4" } : { strokeWidth: 2 },
+        markerEnd: { type: MarkerType.ArrowClosed },
+      })),
+    [snapshot],
+  );
 
   const selected = selectedId ? stagesById.get(selectedId) : undefined;
   const selStatus = selected ? runView.statuses[selected.id] : undefined;
@@ -150,17 +160,12 @@ export function RunView({ projectId, runId, runName, snapshot, initialStored, in
               nodesDraggable
               nodesConnectable={false}
               elementsSelectable
-              onNodesChange={(changes) => {
-                for (const ch of changes) {
-                  if (ch.type === "position" && ch.position) {
-                    const pos = ch.position;
-                    setLayout((l) => ({ ...l, [ch.id]: pos }));
-                  }
-                }
-              }}
+              onNodesChange={onNodesChange}
               onNodeDragStop={(_, n) => {
+                const next = { ...layout, [n.id]: n.position };
+                setLayout(next);
                 try {
-                  localStorage.setItem(layoutKey, JSON.stringify({ ...layout, [n.id]: n.position }));
+                  localStorage.setItem(layoutKey, JSON.stringify(next));
                 } catch {
                   /* storage unavailable: the layout just resets on reload */
                 }
