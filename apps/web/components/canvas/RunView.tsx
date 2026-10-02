@@ -125,7 +125,7 @@ export function RunView({ projectId, runId, runName, snapshot, initialStored, in
           >
             <Background />
             <Controls showInteractive={false} />
-            <MiniMap pannable zoomable />
+            <MiniMap pannable zoomable nodeColor="#94a3b8" maskColor="rgba(0,0,0,0.08)" />
           </ReactFlow>
         </div>
 

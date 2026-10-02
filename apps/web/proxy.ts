@@ -1,8 +1,14 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { devPreviewEnabled } from "@/lib/dev/mock-client";
 
 // Refreshes the Supabase session cookie and sends signed-out users to /login.
 export async function proxy(request: NextRequest) {
+  if (devPreviewEnabled) {
+    // DEV PREVIEW: no login; go straight to the app.
+    if (request.nextUrl.pathname.startsWith("/login")) return NextResponse.redirect(new URL("/projects", request.url));
+    return NextResponse.next();
+  }
   let response = NextResponse.next({ request });
   const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     cookies: {

@@ -106,8 +106,9 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, initial }:
       name: `${typeLabel[type]} baru`,
       config: {},
       mode: handler.defaultMode,
-      pos_x: 80 + (n % 4) * 240,
-      pos_y: 80 + Math.floor(n / 4) * 140,
+      // Below the lowest existing stage so new nodes never land on top of old ones.
+      pos_x: 40,
+      pos_y: n ? Math.max(...state.stages.map((s) => s.pos_y)) + 130 : 80,
       parent_group_id: null,
     };
     commit("add", [{ table: "stages", kind: "insert", row }], [{ table: "stages", kind: "delete", id: row.id }]);
@@ -285,7 +286,7 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, initial }:
           >
             <Background />
             <Controls />
-            <MiniMap pannable zoomable />
+            <MiniMap pannable zoomable nodeColor="#94a3b8" maskColor="rgba(0,0,0,0.08)" />
           </ReactFlow>
         </div>
 
