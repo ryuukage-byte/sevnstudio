@@ -7,13 +7,12 @@ import type { Preset } from "@/lib/presets/types";
 
 interface Props {
   preset: Preset;
-  /** Server action bound to the project and preset; reads `name` from the form data. */
-  startAction: (formData: FormData) => Promise<void>;
-  copyAction: () => Promise<void>;
+  /** Server action bound to the preset; reads `name` (the new project's name) from the form data. */
+  createAction: (formData: FormData) => Promise<void>;
 }
 
 /** Compact preset card. Description, results and steps stay hidden until the user asks for "Detail". */
-export function PresetCard({ preset, startAction, copyAction }: Props) {
+export function PresetCard({ preset, createAction }: Props) {
   const [open, setOpen] = useState(false);
   const [asking, setAsking] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -28,15 +27,9 @@ export function PresetCard({ preset, startAction, copyAction }: Props) {
 
       <div className="mt-4 flex items-center gap-2">
         <Button size="sm" disabled={pending} onClick={() => setAsking(true)}>
-          {pending ? "Membuat…" : "Mulai kerjakan"}
+          {pending ? "Membuat…" : "Pakai"}
         </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          aria-expanded={open}
-          className="text-muted-foreground"
-          onClick={() => setOpen((v) => !v)}
-        >
+        <Button size="sm" variant="ghost" aria-expanded={open} className="text-muted-foreground" onClick={() => setOpen((v) => !v)}>
           Detail <span aria-hidden className={open ? "rotate-90 transition-transform" : "transition-transform"}>›</span>
         </Button>
       </div>
@@ -62,29 +55,20 @@ export function PresetCard({ preset, startAction, copyAction }: Props) {
               ))}
             </ol>
           </div>
-
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={pending}
-            onClick={() => startTransition(() => copyAction())}
-          >
-            Salin jadi alur kerja saya (bisa diubah)
-          </Button>
         </div>
       )}
 
       {asking && (
         <PromptDialog
-          title={`Mulai kerjakan ${preset.title}`}
-          label="Nama pengerjaan"
-          initial={`${preset.title} #1`}
-          confirmLabel="Mulai"
+          title={`Pakai ${preset.title}`}
+          label="Nama proyek"
+          initial={preset.title}
+          confirmLabel="Buat proyek"
           onClose={() => setAsking(false)}
           onSubmit={(name) => {
             const data = new FormData();
             data.set("name", name);
-            startTransition(() => startAction(data));
+            startTransition(() => createAction(data));
           }}
         />
       )}

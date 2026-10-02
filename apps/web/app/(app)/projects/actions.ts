@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { buildSnapshot, snapshotSchema } from "@sevn/engine";
+import { buildSnapshot, cloneSnapshot, snapshotSchema, type Snapshot } from "@sevn/engine";
 import { createClient } from "@/lib/supabase/server";
 import { loadDefinition } from "@/lib/definition";
 import { compilePreset, snapshotToRows } from "@/lib/presets/compile";
@@ -11,52 +11,69 @@ import { getPreset } from "@/lib/presets/data";
 
 const name = z.string().trim().min(1).max(120);
 
-/** Starts a run straight from a built-in preset (no need to copy it first). */
-export async function startRunFromPreset(projectId: string, presetKey: string, formData: FormData) {
+/**
+ * Creates a workflow (stages, lines, items) inside a project from a snapshot. If any insert fails, the project is
+ * removed again so no half-built project is left behind.
+ */
+async function buildProjectFromSnapshot(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  projectName: string,
+  workflowName: string,
+  makeSnapshot: () => Snapshot,
+): Promise<{ projectId: string; workflowId: string }> {
+  const { data: project, error } = await supabase.from("projects").insert({ name: projectName }).select("id").single();
+  if (error) throw error;
+  const projectId = project.id as string;
+  try {
+    const { data: workflow, error: wfError } = await supabase
+      .from("workflows")
+      .insert({ project_id: projectId, name: workflowName })
+      .select("id")
+      .single();
+    if (wfError) throw wfError;
+    const rows = snapshotToRows(makeSnapshot(), workflow.id as string);
+    // Stages first, then the lines and items that point at them.
+    for (const [table, batch] of [
+      ["stages", rows.stages],
+      ["stage_connections", rows.edges],
+      ["items", rows.items],
+    ] as const) {
+      if (!batch.length) continue;
+      const { error: insertError } = await supabase.from(table).insert(batch as never);
+      if (insertError) throw insertError;
+    }
+    return { projectId, workflowId: workflow.id as string };
+  } catch (e) {
+    await supabase.from("projects").delete().eq("id", projectId);
+    throw e;
+  }
+}
+
+/** New project from a built-in preset; opens its workflow. */
+export async function createProjectFromPreset(presetKey: string, formData: FormData) {
   const preset = getPreset(presetKey);
   const parsed = name.safeParse(formData.get("name"));
   if (!preset || !parsed.success) return;
   const supabase = await createClient();
-  const snapshot = compilePreset(preset, () => crypto.randomUUID());
-  const { data, error } = await supabase.rpc("create_run", {
-    p_project_id: projectId,
-    p_name: parsed.data,
-    p_snapshot: snapshot,
-    p_workflow_id: null,
-    p_template_id: null,
-  });
-  if (error) throw error;
-  redirect(`/projects/${projectId}/runs/${data}`);
+  const { projectId, workflowId } = await buildProjectFromSnapshot(supabase, parsed.data, preset.title, () =>
+    compilePreset(preset, () => crypto.randomUUID()),
+  );
+  redirect(`/projects/${projectId}/workflows/${workflowId}`);
 }
 
-/** Copies a built-in preset into the project as an editable workflow. */
-export async function copyPresetToWorkflow(projectId: string, presetKey: string) {
-  const preset = getPreset(presetKey);
-  if (!preset) return;
+/** New project from one of the user's saved templates; opens its workflow. */
+export async function createProjectFromTemplate(templateId: string, formData: FormData) {
+  const id = z.string().uuid().safeParse(templateId);
+  const parsed = name.safeParse(formData.get("name"));
+  if (!id.success || !parsed.success) return;
   const supabase = await createClient();
-  const { data: workflow, error } = await supabase
-    .from("workflows")
-    .insert({ project_id: projectId, name: preset.title })
-    .select("id")
-    .single();
+  const { data: tpl, error } = await supabase.from("templates").select("name, snapshot").eq("id", id.data).single();
   if (error) throw error;
-
-  const rows = snapshotToRows(compilePreset(preset, () => crypto.randomUUID()), workflow.id as string);
-  // Stages first, then the links and items that point at them.
-  for (const [table, batch] of [
-    ["stages", rows.stages],
-    ["stage_connections", rows.edges],
-    ["items", rows.items],
-  ] as const) {
-    if (!batch.length) continue;
-    const { error: insertError } = await supabase.from(table).insert(batch as never);
-    if (insertError) {
-      // Do not leave a half-built workflow behind.
-      await supabase.from("workflows").delete().eq("id", workflow.id);
-      throw insertError;
-    }
-  }
-  redirect(`/projects/${projectId}/workflows/${workflow.id}`);
+  const snapshot = snapshotSchema.parse(tpl.snapshot);
+  const { projectId, workflowId } = await buildProjectFromSnapshot(supabase, parsed.data, tpl.name as string, () =>
+    cloneSnapshot(snapshot, () => crypto.randomUUID()),
+  );
+  redirect(`/projects/${projectId}/workflows/${workflowId}`);
 }
 
 export async function createProject(formData: FormData) {
@@ -76,19 +93,6 @@ export async function deleteProject(formData: FormData) {
   const { error } = await supabase.from("projects").delete().eq("id", id);
   if (error) throw error;
   revalidatePath("/projects");
-}
-
-export async function createWorkflow(projectId: string, formData: FormData) {
-  const parsed = name.safeParse(formData.get("name"));
-  if (!parsed.success) return;
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("workflows")
-    .insert({ project_id: projectId, name: parsed.data })
-    .select("id")
-    .single();
-  if (error) throw error;
-  redirect(`/projects/${projectId}/workflows/${data.id}`);
 }
 
 /** Freezes the workflow's current definition into a template. */
@@ -111,25 +115,6 @@ export async function startRunFromWorkflow(projectId: string, workflowId: string
     p_snapshot: snapshot,
     p_workflow_id: workflowId,
     p_template_id: null,
-  });
-  if (error) throw error;
-  redirect(`/projects/${projectId}/runs/${data}`);
-}
-
-export async function startRunFromTemplate(projectId: string, formData: FormData) {
-  const templateId = z.string().uuid().parse(formData.get("templateId"));
-  const parsed = name.safeParse(formData.get("name"));
-  if (!parsed.success) return;
-  const supabase = await createClient();
-  const { data: tpl, error: tplError } = await supabase.from("templates").select("snapshot").eq("id", templateId).single();
-  if (tplError) throw tplError;
-  const snapshot = snapshotSchema.parse(tpl.snapshot);
-  const { data, error } = await supabase.rpc("create_run", {
-    p_project_id: projectId,
-    p_name: parsed.data,
-    p_snapshot: snapshot,
-    p_workflow_id: null,
-    p_template_id: templateId,
   });
   if (error) throw error;
   redirect(`/projects/${projectId}/runs/${data}`);

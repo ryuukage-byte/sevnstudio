@@ -23,6 +23,7 @@ import {
 } from "@/lib/editor/state";
 import { saveTemplate, startRunFromWorkflow } from "@/app/(app)/projects/actions";
 import { StageNodeView, type StageFlowNode } from "./StageNodeView";
+import { RunsMenu } from "@/components/app/RunsMenu";
 import { PromptDialog, StageDialog } from "./StageDialog";
 import { StageWorkspace } from "./StageWorkspace";
 import { typeLabel } from "./labels";
@@ -44,10 +45,11 @@ interface Props {
   workflowId: string;
   workflowName: string;
   projectName: string;
+  runs: { id: string; name: string; created_at: string }[];
   initial: EditorState;
 }
 
-export function WorkflowEditor({ projectId, workflowId, workflowName, projectName, initial }: Props) {
+export function WorkflowEditor({ projectId, workflowId, workflowName, projectName, runs, initial }: Props) {
   const supabase = useMemo(() => createClient(), []);
   const [state, setState] = useState(initial);
   const [history, setHistory] = useState(emptyHistory);
@@ -262,6 +264,7 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, projectNam
         <div className="flex items-center gap-1">
           <Button size="sm" variant="ghost" onClick={doUndo} disabled={!history.past.length}>Urungkan</Button>
           <Button size="sm" variant="ghost" onClick={doRedo} disabled={!history.future.length}>Ulangi</Button>
+          <RunsMenu projectId={projectId} runs={runs} />
         </div>
         <div className="ml-auto flex gap-2">
           <Button size="sm" variant="outline" onClick={() => setAsk("template")}>Simpan sebagai template</Button>

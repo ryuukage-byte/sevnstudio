@@ -31,6 +31,7 @@ Bukan tujuan: pengganti n8n, Notion/Trello/Miro, editor video, platform agen oto
 9. **Secret** (API key) tidak pernah di config stage atau browser; simpan di Supabase Vault, rujuk lewat nama, di-resolve worker.
 10. **API Stage:** blokir IP privat/localhost (SSRF). Setiap panggilan eksternal membawa kunci idempotensi `stage_run_id + attempt`.
 11. **AI Stage:** output JSON divalidasi schema; catat model, prompt final, dan token usage per stage run.
+12. **Kelompok diturunkan dari edge**, tidak disimpan dan tidak ditambah manual. Stage yang terhubung (blocking atau flow) = satu kelompok (`connectedGroups` di `packages/engine`). Tidak ada tipe stage `group` baru; `stages.parent_group_id` tidak dipakai lagi.
 
 ## Konvensi
 
@@ -46,7 +47,7 @@ Bukan tujuan: pengganti n8n, Notion/Trello/Miro, editor video, platform agen oto
 apps/web/          Next.js (canvas, workspace, mode ceklis)
 worker/            Node.js worker (claim job, jalankan handler)
 packages/engine/   state machine, graph, handler contract (murni, teruji)
-packages/handlers/ checklist, task, note, group, review, ai, api
+packages/handlers/ checklist, task, note, review, ai, api
 supabase/          migrations, seed, policies
 docs/PRD.md        spesifikasi produk
 ```

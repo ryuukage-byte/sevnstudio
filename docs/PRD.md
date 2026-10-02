@@ -37,7 +37,7 @@ Sevn Studio mengisi celah di antara keduanya: satu model kerja untuk ceklis manu
 
 ## Konsep Inti
 
-Seluruh produk dibangun dari delapan primitif; fitur baru hanya diterima jika bisa dinyatakan lewat salah satunya.
+Seluruh produk dibangun dari tujuh primitif; fitur baru hanya diterima jika bisa dinyatakan lewat salah satunya.
 
 | Primitif | Arti | Contoh |
 | --- | --- | --- |
@@ -46,9 +46,10 @@ Seluruh produk dibangun dari delapan primitif; fitur baru hanya diterima jika bi
 | Stage | Unit kerja di canvas; punya tipe, config, dan mode otomatisasi | "Packing", "AI Script" |
 | Item | Isi di dalam stage bertipe Checklist; punya state sendiri | "Paspor", qty 1, centang |
 | Edge | Koneksi antar stage: blocking (mengunci) atau flow (informasi) | Script → TTS |
-| Group | Pengelompokan visual stage di canvas | "Sebelum berangkat" |
 | Template | Workflow tersimpan yang bisa diduplikasi | "Japanese Learning Short" |
 | Run | Satu eksekusi workflow dari template; state-nya terpisah | "Trip #2" |
+
+**Kelompok bukan primitif tersimpan.** Stage yang terhubung edge (blocking maupun flow) otomatis menjadi satu kelompok; stage tanpa edge berdiri sendiri. Kelompok dihitung dari graph, tidak punya tabel, nama, atau status, dan tidak diatur manual. (Perubahan dari draf awal, yang punya tipe stage Group.)
 
 **Aturan emas: definisi dan eksekusi dipisah.** Template/workflow tidak menyimpan status. Status (TODO, RUNNING, DONE) hidup di Run. Dengan begitu ceklis traveling bisa dipakai berkali-kali tanpa saling menimpa.
 
@@ -65,7 +66,6 @@ Semua tipe stage memakai satu Stage Engine dan satu kontrak handler; tipe baru b
 | Checklist | Daftar item yang dicentang | Manual | Tidak | MVP |
 | Task | Satu pekerjaan dengan catatan dan tenggat | Manual | Tidak | MVP |
 | Note | Teks/referensi yang diteruskan ke stage lain | Manual | Tidak | MVP |
-| Group | Pengelompokan visual (bukan stage kerja) | Manual | Tidak | MVP |
 | Review | Gerbang approve / reject / regenerate | Manual | Tidak | MVP |
 | AI | Prompt + context menghasilkan teks atau JSON | Semi-auto | Ya | MVP |
 | API | HTTP request generik dengan mapping input/output | Auto | Ya | MVP |
@@ -119,7 +119,7 @@ Canvas dipakai untuk memahami dan mengontrol workflow; pekerjaan sebenarnya dila
 
 **Mode Ceklis (mobile-first)**
 
-- Daftar vertikal dari Run aktif, dikelompokkan per Group dan diurutkan mengikuti edge.
+- Daftar vertikal dari Run aktif, dikelompokkan per kelompok (turunan dari edge) dan diurutkan mengikuti edge.
 - Centang item dengan satu ketukan; stage yang terkunci tampak jelas beserta alasannya.
 - Dipakai di toko atau bandara, jadi harus cepat dan bisa dibuka satu tangan.
 
@@ -251,7 +251,7 @@ MVP berhasil bila satu orang dapat menjalankan dua workflow bukti tanpa menulis 
 
 |  | Workflow A: Travel Checklist | Workflow B: AI Script → TTS |
 | --- | --- | --- |
-| Stage | Dokumen (Checklist), Booking (Checklist + tenggat), Packing (Checklist), Group "Sebelum berangkat" | Idea (Task) → Script (AI) → Review → TTS (API) → Output (Note/file) |
+| Stage | Dokumen (Checklist), Booking (Checklist + tenggat), Packing (Checklist) | Idea (Task) → Script (AI) → Review → TTS (API) → Output (Note/file) |
 | Edge | Dokumen → Booking blocking; Packing flow (bebas) | Semua blocking |
 | Butuh worker | Tidak | Ya (AI dan API) |
 | Yang dibuktikan | Canvas, item, status, template, run baru dari template, mode ceklis, offline | Engine eksekusi, context, approval, versioning, API mapping, run history |
@@ -260,7 +260,7 @@ MVP berhasil bila satu orang dapat menjalankan dua workflow bukti tanpa menulis 
 
 1. Auth, project, dan penyimpanan (Supabase, RLS).
 2. Canvas: tambah, pindah, hubungkan, hapus, ganti nama stage; auto-save dan undo/redo klien.
-3. Tipe stage: Checklist, Task, Note, Group, Review, AI, API.
+3. Tipe stage: Checklist, Task, Note, Review, AI, API. Kelompok diturunkan dari edge (lihat Konsep Inti).
 4. Edge blocking dan flow; status LOCKED/READY diturunkan dari graph.
 5. Eksekusi: READY → RUNNING → REVIEW → APPROVED, dengan REJECTED, FAILED, dan STALE.
 6. Template: simpan workflow sebagai template dan buat Run baru darinya.
