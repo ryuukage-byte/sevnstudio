@@ -16,6 +16,7 @@ class Builder implements PromiseLike<Result> {
     return this;
   }
   eq(col: string, val: unknown) { this.q.filters.push({ op: "eq", col, val }); return this; }
+  lt(col: string, val: unknown) { this.q.filters.push({ op: "lt", col, val }); return this; }
   in(col: string, val: unknown[]) { this.q.filters.push({ op: "in", col, val }); return this; }
   order(col: string, opts?: { ascending?: boolean }) { this.q.order.push({ col, asc: opts?.ascending ?? true }); return this; }
   single() { this.q.single = "single"; return this; }

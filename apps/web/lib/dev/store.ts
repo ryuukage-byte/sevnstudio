@@ -8,7 +8,7 @@ export interface Query {
   table: string;
   action: "select" | "insert" | "update" | "delete" | "upsert" | "rpc";
   payload?: unknown;
-  filters: { op: "eq" | "in"; col: string; val: unknown }[];
+  filters: { op: "eq" | "in" | "lt"; col: string; val: unknown }[];
   order: { col: string; asc: boolean }[];
   single?: "single" | "maybe";
   returning: boolean;
@@ -82,7 +82,9 @@ function db(): Db {
 const fail = (message: string): Result => ({ data: null, error: { message } });
 
 function matches(row: Row, q: Query) {
-  return q.filters.every((f) => (f.op === "eq" ? row[f.col] === f.val : (f.val as unknown[]).includes(row[f.col])));
+  return q.filters.every((f) =>
+    f.op === "eq" ? row[f.col] === f.val : f.op === "lt" ? (row[f.col] as string) < (f.val as string) : (f.val as unknown[]).includes(row[f.col]),
+  );
 }
 
 /** Mirrors ON DELETE CASCADE / SET NULL for the tables the UI deletes from. */
