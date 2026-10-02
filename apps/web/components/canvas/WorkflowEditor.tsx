@@ -4,7 +4,7 @@ import "@xyflow/react/dist/style.css";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Background, Controls, MarkerType, MiniMap, ReactFlow,
+  Background, Controls, MarkerType, MiniMap, Panel, ReactFlow,
   type Connection, type Edge as FlowEdge, type NodeChange,
 } from "@xyflow/react";
 import { validateConnection, type ConnectionError } from "@sevn/engine";
@@ -48,6 +48,9 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, initial }:
   const [dragPos, setDragPos] = useState<Record<string, { x: number; y: number }>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [saveError, setSaveError] = useState(false);
+  const [menu, setMenu] = useState<{ sx: number; sy: number; fx: number; fy: number } | null>(null);
+  const rfRef = useRef<{ screenToFlowPosition: (p: { x: number; y: number }) => { x: number; y: number } } | null>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
 
   // Always-current copies for event handlers and the write queue.
   const stateRef = useRef(initial);
@@ -96,7 +99,7 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, initial }:
     run(r.ops);
   }, [run, updateHistory]);
 
-  const addStage = (type: StageType) => {
+  const addStage = (type: StageType, at?: { x: number; y: number }) => {
     const n = state.stages.length;
     const handler = getHandler(type)!;
     const row: StageRow = {
@@ -106,9 +109,9 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, initial }:
       name: `${typeLabel[type]} baru`,
       config: {},
       mode: handler.defaultMode,
-      // Below the lowest existing stage so new nodes never land on top of old ones.
-      pos_x: 40,
-      pos_y: n ? Math.max(...state.stages.map((s) => s.pos_y)) + 130 : 80,
+      // At the clicked spot when given; otherwise below the lowest stage so new nodes never land on old ones.
+      pos_x: at ? at.x : 40,
+      pos_y: at ? at.y : n ? Math.max(...state.stages.map((s) => s.pos_y)) + 130 : 80,
       parent_group_id: null,
     };
     commit("add", [{ table: "stages", kind: "insert", row }], [{ table: "stages", kind: "delete", id: row.id }]);
@@ -224,10 +227,6 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, initial }:
       <header className="flex flex-wrap items-center gap-2 border-b px-3 py-2">
         <Link href={`/projects/${projectId}`} className="text-sm text-muted-foreground hover:underline">← Project</Link>
         <h1 className="mr-2 font-medium">{workflowName}</h1>
-        {stageTypes.map((t) => (
-          <Button key={t} size="sm" variant="outline" onClick={() => addStage(t)}>+ {typeLabel[t]}</Button>
-        ))}
-        <span className="mx-1 h-5 w-px bg-border" />
         <Button size="sm" variant="ghost" onClick={doUndo} disabled={!history.past.length}>Urungkan</Button>
         <Button size="sm" variant="ghost" onClick={doRedo} disabled={!history.future.length}>Ulangi</Button>
         <Button size="sm" variant="ghost" onClick={deleteSelection} disabled={!selection}>Hapus pilihan</Button>
@@ -261,16 +260,31 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, initial }:
       )}
 
       <div className="flex min-h-0 flex-1">
-        <div className="min-w-0 flex-1">
+        <div ref={canvasRef} className="relative min-w-0 flex-1">
           <ReactFlow
             nodes={nodes}
             edges={edges}
             nodeTypes={nodeTypes}
+            onInit={(instance) => {
+              rfRef.current = instance;
+            }}
+            zoomOnDoubleClick={false}
+            onDoubleClick={(e) => {
+              // Double-click on empty canvas opens the add-stage menu at that spot.
+              if (!(e.target as HTMLElement).classList.contains("react-flow__pane") || !rfRef.current) return;
+              const box = canvasRef.current?.getBoundingClientRect();
+              const flow = rfRef.current.screenToFlowPosition({ x: e.clientX, y: e.clientY });
+              setMenu({ sx: e.clientX - (box?.left ?? 0), sy: e.clientY - (box?.top ?? 0), fx: flow.x, fy: flow.y });
+            }}
+            onMoveStart={() => setMenu(null)}
             onNodesChange={onNodesChange}
             onConnect={onConnect}
             onNodeClick={(_, n) => setSelection({ kind: "stage", id: n.id })}
             onEdgeClick={(_, e) => setSelection({ kind: "edge", id: e.id })}
-            onPaneClick={() => setSelection(null)}
+            onPaneClick={() => {
+              setSelection(null);
+              setMenu(null);
+            }}
             onNodeDragStop={(_, n) => {
               const prev = stateRef.current.stages.find((s) => s.id === n.id);
               setDragPos((p) => Object.fromEntries(Object.entries(p).filter(([k]) => k !== n.id)));
@@ -287,7 +301,36 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, initial }:
             <Background />
             <Controls />
             <MiniMap pannable zoomable nodeColor="#94a3b8" maskColor="rgba(0,0,0,0.08)" />
+            <Panel position="top-left" className="flex flex-wrap items-center gap-1 rounded-lg border bg-card p-1 shadow-sm">
+              <span className="px-2 text-xs text-muted-foreground">Tambah:</span>
+              {stageTypes.map((t) => (
+                <Button key={t} size="sm" variant="ghost" onClick={() => addStage(t)}>{typeLabel[t]}</Button>
+              ))}
+            </Panel>
           </ReactFlow>
+          {menu && (
+            <div
+              role="menu"
+              aria-label="Tambah stage di sini"
+              className="absolute z-10 flex w-40 flex-col rounded-lg border bg-popover p-1 text-popover-foreground shadow-md"
+              style={{ left: menu.sx, top: menu.sy }}
+            >
+              <span className="px-2 py-1 text-xs text-muted-foreground">Tambah di sini</span>
+              {stageTypes.map((t) => (
+                <button
+                  key={t}
+                  role="menuitem"
+                  className="rounded px-2 py-1.5 text-left text-sm hover:bg-muted"
+                  onClick={() => {
+                    addStage(t, { x: menu.fx, y: menu.fy });
+                    setMenu(null);
+                  }}
+                >
+                  + {typeLabel[t]}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <aside className="w-80 shrink-0 overflow-y-auto border-l p-3">

@@ -30,6 +30,19 @@ export function RunView({ projectId, runId, runName, snapshot, initialStored, in
   const [view, setView] = useState<"list" | "canvas">("canvas");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
+  // Node positions are a per-device viewing preference for this run; they never change the workflow or the run snapshot.
+  const layoutKey = `sevn:layout:${runId}`;
+  const [layout, setLayout] = useState<Record<string, { x: number; y: number }>>({});
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(layoutKey);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- client-only storage read after mount
+      if (raw) setLayout(JSON.parse(raw) as Record<string, { x: number; y: number }>);
+    } catch {
+      /* ignore corrupt or unavailable storage */
+    }
+  }, [layoutKey]);
+
   // Phones default to the checklist view; desktop keeps the canvas.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- needs window.matchMedia, unavailable during SSR
@@ -59,9 +72,9 @@ export function RunView({ projectId, runId, runName, snapshot, initialStored, in
     return {
       id: s.id,
       type: "stage",
-      position: { x: s.posX, y: s.posY },
+      position: layout[s.id] ?? { x: s.posX, y: s.posY },
       selected: s.id === selectedId,
-      draggable: false,
+      draggable: true,
       connectable: false,
       data: {
         name: s.name,
@@ -134,9 +147,24 @@ export function RunView({ projectId, runId, runName, snapshot, initialStored, in
               nodes={nodes}
               edges={edges}
               nodeTypes={nodeTypes}
-              nodesDraggable={false}
+              nodesDraggable
               nodesConnectable={false}
               elementsSelectable
+              onNodesChange={(changes) => {
+                for (const ch of changes) {
+                  if (ch.type === "position" && ch.position) {
+                    const pos = ch.position;
+                    setLayout((l) => ({ ...l, [ch.id]: pos }));
+                  }
+                }
+              }}
+              onNodeDragStop={(_, n) => {
+                try {
+                  localStorage.setItem(layoutKey, JSON.stringify({ ...layout, [n.id]: n.position }));
+                } catch {
+                  /* storage unavailable: the layout just resets on reload */
+                }
+              }}
               onNodeClick={(_, n) => setSelectedId(n.id)}
               onPaneClick={() => setSelectedId(null)}
               fitView
