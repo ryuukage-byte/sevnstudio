@@ -13,7 +13,7 @@ Teks yang dilihat pengguna memakai bahasa sehari-hari. Istilah teknis tetap dipa
 | Edge `blocking` | Harus urut | Langkah berikutnya menunggu |
 | Edge `flow` | Bebas urutan | Label garis: "bebas" |
 | Run | Pengerjaan | "Mulai kerjakan" |
-| Template | Template | Dijelaskan: "alur kerja yang disimpan agar bisa dipakai lagi" |
+| Preset / Template | Preset | Satu hal yang sama. Tag membedakan: "Bawaan" (dari developer, plus kategori) dan "Milik saya" (buatan pengguna). |
 | Canvas | Peta | Tab "Daftar" dan "Peta" |
 | LOCKED | Menunggu | Selalu sertakan alasan: "Selesaikan dulu: X" |
 | READY | Siap dikerjakan | |

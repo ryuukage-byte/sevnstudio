@@ -6,7 +6,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 /** Modal window (native <dialog>: Escape to close, focus stays inside, page behind is dimmed). */
-export function StageDialog({ title, onClose, children, closeLabel = "Selesai" }: { title: string; onClose: () => void; children: ReactNode; closeLabel?: string }) {
+export function StageDialog({
+  title,
+  onClose,
+  children,
+  closeLabel = "Selesai",
+  wide = false,
+}: {
+  title: string;
+  onClose: () => void;
+  children: ReactNode;
+  closeLabel?: string;
+  wide?: boolean;
+}) {
   const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -29,7 +41,7 @@ export function StageDialog({ title, onClose, children, closeLabel = "Selesai" }
       onClick={(e) => {
         if (e.target === ref.current) requestClose(); // click on the dimmed backdrop
       }}
-      className="m-auto max-h-[88vh] w-[min(94vw,30rem)] overflow-y-auto rounded-[22px] border border-border-strong bg-[radial-gradient(circle_260px_at_50%_0,rgba(255,255,255,0.045),transparent_70%),#111] p-6 text-popover-foreground shadow-[0_28px_70px_rgba(0,0,0,0.62)] backdrop:bg-black/70 backdrop:backdrop-blur-md"
+      className={`m-auto max-h-[88vh] ${wide ? "w-[min(94vw,40rem)]" : "w-[min(94vw,30rem)]"} overflow-y-auto rounded-[22px] border border-border-strong bg-[radial-gradient(circle_260px_at_50%_0,rgba(255,255,255,0.045),transparent_70%),#111] p-6 text-popover-foreground shadow-[0_28px_70px_rgba(0,0,0,0.62)] backdrop:bg-black/70 backdrop:backdrop-blur-md`}
     >
       <div className="mb-5 flex items-center justify-between gap-3">
         <h2 className="text-xl font-medium tracking-[-0.03em]">{title}</h2>

@@ -165,6 +165,7 @@ Template memungkinkan satu workflow dipakai berkali-kali: "Travel Jepang" disimp
 - Simpan sebagai template, duplikasi, impor, dan ekspor (JSON).
 - Membuat Run dari template menyalin snapshot definisi, sehingga mengedit template belakangan tidak mengubah Run lama.
 - Template bawaan untuk MVP: Travel Checklist, Shopping List, dan Idea → AI Script → Review → API.
+- Preset buatan developer dan template buatan pengguna adalah hal yang sama; keduanya hanya dibedakan lewat tag (mis. Bawaan, Milik saya, Otomatis). Memulai proyek bisa dari Manual, Preset/Template, atau AI (AI aktif setelah pengguna menghubungkan API di Pengaturan).
 
 **Versioning**
 

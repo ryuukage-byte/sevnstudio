@@ -2,11 +2,10 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { ConfirmSubmit } from "@/components/app/ConfirmSubmit";
 import { NewProjectFab } from "@/components/app/NewProjectFab";
-import { PageHero, PageShell, SectionTitle } from "@/components/app/Page";
-import { PresetGallery } from "@/components/app/PresetGallery";
-import { presets } from "@/lib/presets/data";
+import { PageHero, PageShell } from "@/components/app/Page";
+import { presetEntries, templateEntry } from "@/lib/presets/entries";
 import { createClient } from "@/lib/supabase/server";
-import { createProject, createProjectFromTemplate, deleteProject } from "./actions";
+import { createProject, createProjectFromPreset, createProjectFromTemplate, deleteProject } from "./actions";
 
 export const metadata: Metadata = { title: "Proyek" };
 
@@ -16,8 +15,14 @@ export default async function ProjectsPage() {
   const supabase = await createClient();
   const [projects, templates] = await Promise.all([
     supabase.from("projects").select("id, name, created_at").order("created_at", { ascending: false }),
-    supabase.from("templates").select("id, name").order("created_at", { ascending: false }),
+    supabase.from("templates").select("id, name, snapshot").order("created_at", { ascending: false }),
   ]);
+
+  // Built-in presets and the user's own templates are one list; only the tags differ.
+  const entries = [
+    ...presetEntries(),
+    ...(templates.data ?? []).flatMap((t) => templateEntry({ id: t.id as string, name: t.name as string, snapshot: t.snapshot }) ?? []),
+  ];
 
   return (
     <PageShell>
@@ -48,18 +53,14 @@ export default async function ProjectsPage() {
       ) : (
         <div className="sv-empty">
           <div className="mx-auto mb-4 grid size-10 place-items-center rounded-full border border-border-strong font-mono text-xs text-faint">—</div>
-          Belum ada proyek. Tekan tombol + di pojok kanan bawah, atau pakai salah satu preset di bawah.
+          Belum ada proyek. Tekan tombol + di pojok kanan bawah untuk memulai.
         </div>
       )}
 
-      <section id="preset" className="mt-16 scroll-mt-20">
-        <SectionTitle title="Preset siap pakai" count={presets.length} />
-        <PresetGallery presets={presets} />
-      </section>
-
       <NewProjectFab
-        templates={(templates.data ?? []).map((t) => ({ id: t.id as string, name: t.name as string }))}
+        entries={entries}
         createBlank={createProject}
+        createFromPreset={createProjectFromPreset}
         createFromTemplate={createProjectFromTemplate}
       />
     </PageShell>

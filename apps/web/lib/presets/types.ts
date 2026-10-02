@@ -29,17 +29,9 @@ export interface Preset {
   links: [string, string, "blocking" | "flow"][];
 }
 
-export const categoryInfo: Record<PresetCategory, { title: string; hint: string }> = {
-  otomatis: {
-    title: "Otomatis",
-    hint: "Dari bahan awal sampai hasil jadi. Nantinya langkah-langkah AI bisa berjalan sendiri; sekarang Anda mengerjakannya dengan AI pilihan Anda.",
-  },
-  semi: {
-    title: "Semi-otomatis",
-    hint: "AI membantu, tetapi ada titik di mana Anda memutuskan atau mengerjakan sendiri.",
-  },
-  harian: {
-    title: "Kehidupan sehari-hari",
-    hint: "Membantu menentukan dan menjalankan aktivitas harian. Tidak butuh AI.",
-  },
+/** Tag shown for each category. Presets and templates are one thing; tags only tell them apart. */
+export const categoryTag: Record<PresetCategory, string> = {
+  otomatis: "Otomatis",
+  semi: "Semi-otomatis",
+  harian: "Sehari-hari",
 };
