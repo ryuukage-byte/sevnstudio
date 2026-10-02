@@ -84,7 +84,7 @@ export default async function ProjectPage({ params }: PageProps<"/projects/[proj
         <section>
           <SectionTitle
             title="Preset siap pakai"
-            hint="Alur kerja yang sudah disusun. Pakai langsung, atau salin dulu lalu ubah sesuai kebutuhan Anda."
+            hint="Alur kerja yang sudah disusun."
             count={presets.length}
           />
           <PresetGallery projectId={projectId} presets={presets} />
