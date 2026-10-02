@@ -1,6 +1,6 @@
 "use client";
 
-import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
+import { Handle, NodeToolbar, Position, type Node, type NodeProps } from "@xyflow/react";
 import { cn } from "@/lib/utils";
 import { statusClass, statusLabel, typeLabel } from "./labels";
 
@@ -13,6 +13,9 @@ export interface StageNodeData extends Record<string, unknown> {
   /** Why the stage is locked; only present in run view. */
   lockReason?: string;
   progress?: string;
+  /** Editor only: shown in the toolbar above a selected node. */
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
 export type StageFlowNode = Node<StageNodeData, "stage">;
@@ -28,6 +31,12 @@ export function StageNodeView({ data, selected }: NodeProps<StageFlowNode>) {
         data.status === "LOCKED" && "opacity-70",
       )}
     >
+      {data.onEdit && data.onDelete && (
+        <NodeToolbar isVisible={selected} position={Position.Top} offset={8} className="flex gap-1 rounded-lg border bg-card p-1 shadow-md">
+          <button type="button" className="rounded px-2.5 py-1 text-sm hover:bg-muted" onClick={data.onEdit}>Ubah</button>
+          <button type="button" className="rounded px-2.5 py-1 text-sm text-destructive hover:bg-destructive/10" onClick={data.onDelete}>Hapus</button>
+        </NodeToolbar>
+      )}
       {!isGroup && <Handle type="target" position={Position.Left} />}
       <div className="flex items-center justify-between gap-2">
         <span className="truncate text-sm font-medium">{data.name}</span>

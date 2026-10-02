@@ -17,14 +17,14 @@ export default function LoginPage() {
         <h1 className="text-2xl font-semibold">Sevn Studio</h1>
         <p className="text-sm text-muted-foreground">Masuk untuk menyusun dan mengerjakan daftar kerja Anda.</p>
       </div>
-      <form className="flex flex-col gap-4">
+      <form noValidate className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" name="email" type="email" autoComplete="email" required />
+          <Input id="email" name="email" type="email" autoComplete="email" inputMode="email" placeholder="nama@gmail.com" />
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="password">Kata sandi</Label>
-          <Input id="password" name="password" type="password" autoComplete="current-password" required minLength={8} />
+          <Input id="password" name="password" type="password" autoComplete="current-password" />
         </div>
         {message && <p role="alert" className="text-sm text-destructive">{message}</p>}
         <div className="flex gap-2">

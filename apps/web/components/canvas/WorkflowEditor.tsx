@@ -19,6 +19,7 @@ import {
 } from "@/lib/editor/state";
 import { saveTemplate, startRunFromWorkflow } from "@/app/projects/actions";
 import { StageNodeView, type StageFlowNode } from "./StageNodeView";
+import { StageDialog } from "./StageDialog";
 import { StageWorkspace } from "./StageWorkspace";
 import { typeLabel } from "./labels";
 
@@ -27,7 +28,7 @@ const nodeTypes = { stage: StageNodeView };
 const connectionMessage: Record<ConnectionError, string> = {
   unknown_stage: "Langkah tidak ditemukan.",
   self_loop: "Langkah tidak bisa dihubungkan ke dirinya sendiri.",
-  group_edge: "Kelompok tidak perlu dihubungkan. Masukkan langkah ke kelompok lewat panel di kanan.",
+  group_edge: "Kelompok tidak perlu dihubungkan. Masukkan langkah ke kelompok lewat tombol Ubah pada langkah.",
   duplicate: "Dua langkah itu sudah terhubung.",
   cycle: "Tidak bisa: hubungan itu membuat langkah saling menunggu tanpa ujung.",
 };
@@ -48,6 +49,8 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, initial }:
   const [selection, setSelection] = useState<Selection>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [saveError, setSaveError] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [edgeMenu, setEdgeMenu] = useState<{ id: string; sx: number; sy: number } | null>(null);
   const [menu, setMenu] = useState<{ sx: number; sy: number; fx: number; fy: number } | null>(null);
   const rfRef = useRef<{ screenToFlowPosition: (p: { x: number; y: number }) => { x: number; y: number } } | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -143,6 +146,16 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, initial }:
     setSelection({ kind: "edge", id: row.id });
   };
 
+  const deleteStage = useCallback(
+    (id: string) => {
+      const { forward, backward } = deleteStageOps(stateRef.current, id);
+      commit("delete", forward, backward);
+      setSelection(null);
+      setEditingId((cur) => (cur === id ? null : cur));
+    },
+    [commit],
+  );
+
   const deleteSelection = useCallback(() => {
     if (!selection) return;
     const s = stateRef.current;
@@ -188,9 +201,11 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, initial }:
           name: s.name,
           type: s.type,
           groupName: state.stages.find((g) => g.id === s.parent_group_id)?.name ?? null,
+          onEdit: () => setEditingId(s.id),
+          onDelete: () => deleteStage(s.id),
         },
       })),
-    [state.stages, selection],
+    [state.stages, selection, deleteStage],
   );
   const [nodes, onNodesChange] = useSyncedNodes(baseNodes);
 
@@ -208,8 +223,8 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, initial }:
     [state.edges, selection],
   );
 
-  const selectedStage = selection?.kind === "stage" ? state.stages.find((s) => s.id === selection.id) : undefined;
-  const selectedEdge = selection?.kind === "edge" ? state.edges.find((e) => e.id === selection.id) : undefined;
+  const editingStage = editingId ? state.stages.find((s) => s.id === editingId) : undefined;
+  const menuEdge = edgeMenu ? state.edges.find((e) => e.id === edgeMenu.id) : undefined;
 
   const afterFlush = async (fn: () => Promise<void>) => {
     await queue.current;
@@ -229,7 +244,6 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, initial }:
         <h1 className="mr-2 font-medium">{workflowName}</h1>
         <Button size="sm" variant="ghost" onClick={doUndo} disabled={!history.past.length}>Urungkan</Button>
         <Button size="sm" variant="ghost" onClick={doRedo} disabled={!history.future.length}>Ulangi</Button>
-        <Button size="sm" variant="ghost" onClick={deleteSelection} disabled={!selection}>Hapus pilihan</Button>
         <div className="ml-auto flex gap-2">
           <Button
             size="sm"
@@ -276,14 +290,25 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, initial }:
               const flow = rfRef.current.screenToFlowPosition({ x: e.clientX, y: e.clientY });
               setMenu({ sx: e.clientX - (box?.left ?? 0), sy: e.clientY - (box?.top ?? 0), fx: flow.x, fy: flow.y });
             }}
-            onMoveStart={() => setMenu(null)}
+            onMoveStart={() => {
+              setMenu(null);
+              setEdgeMenu(null);
+            }}
             onNodesChange={onNodesChange}
             onConnect={onConnect}
-            onNodeClick={(_, n) => setSelection({ kind: "stage", id: n.id })}
-            onEdgeClick={(_, e) => setSelection({ kind: "edge", id: e.id })}
+            onNodeClick={(_, n) => {
+              setSelection({ kind: "stage", id: n.id });
+              setEdgeMenu(null);
+            }}
+            onEdgeClick={(ev, e) => {
+              const box = canvasRef.current?.getBoundingClientRect();
+              setSelection({ kind: "edge", id: e.id });
+              setEdgeMenu({ id: e.id, sx: ev.clientX - (box?.left ?? 0), sy: ev.clientY - (box?.top ?? 0) });
+            }}
             onPaneClick={() => {
               setSelection(null);
               setMenu(null);
+              setEdgeMenu(null);
             }}
             onNodeDragStop={(_, n) => {
               const prev = stateRef.current.stages.find((s) => s.id === n.id);
@@ -305,6 +330,9 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, initial }:
               {stageTypes.map((t) => (
                 <Button key={t} size="sm" variant="ghost" onClick={() => addStage(t)}>{typeLabel[t]}</Button>
               ))}
+            </Panel>
+            <Panel position="bottom-center" className="rounded-lg border bg-card/90 px-3 py-1.5 text-xs text-muted-foreground shadow-sm">
+              Klik langkah untuk Ubah atau Hapus · Klik dua kali area kosong untuk menambah · Tarik titik di tepi langkah untuk menghubungkan
             </Panel>
           </ReactFlow>
           {menu && (
@@ -330,40 +358,61 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, initial }:
               ))}
             </div>
           )}
-        </div>
-
-        <aside className="w-80 shrink-0 overflow-y-auto border-l p-3">
-          {selectedStage ? (
-            <StageWorkspace state={state} stage={selectedStage} commit={commit} apply={run} />
-          ) : selectedEdge ? (
-            <div className="space-y-3">
-              <div className="text-sm font-medium">Hubungan antar langkah</div>
-              <p className="text-xs text-muted-foreground">
-                Harus urut: langkah berikutnya baru bisa dikerjakan setelah langkah sebelumnya selesai. Bebas urutan: hanya garis penanda, langkah boleh dikerjakan kapan saja.
-              </p>
-              <select
-                className="h-8 w-full rounded-lg border border-input bg-transparent px-2 text-sm"
-                value={selectedEdge.kind}
-                onChange={(e) => {
-                  const kind = e.target.value as "blocking" | "flow";
-                  commit(
-                    "edge kind",
-                    [{ table: "stage_connections", kind: "update", id: selectedEdge.id, patch: { kind } }],
-                    [{ table: "stage_connections", kind: "update", id: selectedEdge.id, patch: { kind: selectedEdge.kind } }],
-                  );
+          {edgeMenu && menuEdge && (
+            <div
+              role="menu"
+              aria-label="Hubungan antar langkah"
+              className="absolute z-10 flex w-56 flex-col rounded-lg border bg-popover p-1 text-popover-foreground shadow-md"
+              style={{ left: edgeMenu.sx, top: edgeMenu.sy }}
+            >
+              <span className="px-2 py-1 text-xs text-muted-foreground">Hubungan antar langkah</span>
+              {(
+                [
+                  ["blocking", "Harus urut", "Langkah berikutnya menunggu"],
+                  ["flow", "Bebas urutan", "Boleh dikerjakan kapan saja"],
+                ] as const
+              ).map(([kind, label, hint]) => (
+                <button
+                  key={kind}
+                  role="menuitemradio"
+                  aria-checked={menuEdge.kind === kind}
+                  className="flex flex-col rounded px-2 py-1.5 text-left text-sm hover:bg-muted"
+                  onClick={() => {
+                    if (menuEdge.kind !== kind) {
+                      commit(
+                        "edge kind",
+                        [{ table: "stage_connections", kind: "update", id: menuEdge.id, patch: { kind } }],
+                        [{ table: "stage_connections", kind: "update", id: menuEdge.id, patch: { kind: menuEdge.kind } }],
+                      );
+                    }
+                    setEdgeMenu(null);
+                  }}
+                >
+                  <span>{menuEdge.kind === kind ? "✓ " : ""}{label}</span>
+                  <span className="text-xs text-muted-foreground">{hint}</span>
+                </button>
+              ))}
+              <button
+                role="menuitem"
+                className="rounded px-2 py-1.5 text-left text-sm text-destructive hover:bg-destructive/10"
+                onClick={() => {
+                  commit("disconnect", [{ table: "stage_connections", kind: "delete", id: menuEdge.id }], [{ table: "stage_connections", kind: "insert", row: menuEdge }]);
+                  setEdgeMenu(null);
+                  setSelection(null);
                 }}
               >
-                <option value="blocking">Harus urut (berikutnya menunggu)</option>
-                <option value="flow">Bebas urutan</option>
-              </select>
+                Hapus hubungan
+              </button>
             </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              Klik sebuah langkah atau garis untuk mengubahnya. Untuk menghubungkan dua langkah, tarik dari titik di sisi kanan langkah pertama ke titik di sisi kiri langkah kedua. Klik dua kali di area kosong untuk menambah langkah.
-            </p>
           )}
-        </aside>
+        </div>
       </div>
+
+      {editingStage && (
+        <StageDialog title={`Ubah ${typeLabel[editingStage.type]?.toLowerCase() ?? "langkah"}`} onClose={() => setEditingId(null)}>
+          <StageWorkspace state={state} stage={editingStage} commit={commit} apply={run} />
+        </StageDialog>
+      )}
     </div>
   );
 }
