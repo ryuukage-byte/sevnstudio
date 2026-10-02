@@ -78,6 +78,30 @@ export function StageWorkspace({ state, stage, commit, apply }: Props) {
         </div>
       )}
 
+      {stage.type === "input" && (
+        <>
+          <div className="space-y-1.5">
+            <Label htmlFor="input-prompt">Petunjuk isian</Label>
+            <textarea
+              id="input-prompt"
+              className={textareaClass}
+              placeholder="Contoh: Tulis ide atau bahan di sini..."
+              defaultValue={(stage.config.prompt as string) ?? ""}
+              onBlur={(e) => setConfig("prompt", e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="input-placeholder">Teks placeholder</Label>
+            <Input
+              id="input-placeholder"
+              defaultValue={(stage.config.placeholder as string) ?? ""}
+              placeholder="Contoh: Mulai mengetik di sini..."
+              onBlur={(e) => setConfig("placeholder", e.target.value)}
+            />
+          </div>
+        </>
+      )}
+
       {stage.type === "checklist" && <ItemsEditor stageId={stage.id} items={items} apply={apply} />}
     </div>
   );

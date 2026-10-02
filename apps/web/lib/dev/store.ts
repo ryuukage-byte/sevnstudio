@@ -39,8 +39,8 @@ function seed(): Db {
   db.workflows.push({ id: wfId, project_id: projectId, name: "Travel Checklist", created_at: now(), updated_at: now() });
 
   const docs = id(), booking = id(), packing = id(), tips = id();
-  const stage = (sid: string, type: string, name: string, x: number, y: number, config: object = {}, parent: string | null = null) =>
-    db.stages.push({ id: sid, workflow_id: wfId, type, name, config, mode: "manual", pos_x: x, pos_y: y, parent_group_id: parent, created_at: now(), updated_at: now() });
+  const stage = (sid: string, type: string, name: string, x: number, y: number, config: object = {}) =>
+    db.stages.push({ id: sid, workflow_id: wfId, type, name, config, mode: "manual", pos_x: x, pos_y: y, created_at: now(), updated_at: now() });
   stage(docs, "checklist", "Dokumen", 40, 150);
   stage(booking, "checklist", "Booking", 340, 150);
   stage(packing, "checklist", "Packing", 640, 150);
@@ -65,7 +65,7 @@ function seed(): Db {
 
   const camel = (r: Row) => r as never;
   const snapshot = buildSnapshot({
-    stages: db.stages.map((s) => ({ id: s.id as string, type: s.type as string, name: s.name as string, config: s.config as Record<string, unknown>, mode: "manual" as const, posX: s.pos_x as number, posY: s.pos_y as number, parentGroupId: s.parent_group_id as string | null })),
+    stages: db.stages.map((s) => ({ id: s.id as string, type: s.type as string, name: s.name as string, config: s.config as Record<string, unknown>, mode: "manual" as const, posX: s.pos_x as number, posY: s.pos_y as number, parentGroupId: null })),
     edges: db.stage_connections.map((e) => ({ id: e.id as string, source: e.source_stage_id as string, target: e.target_stage_id as string, kind: e.kind as "blocking" | "flow", sourcePort: "text" as const, targetPort: "text" as const })),
     items: db.items.map((i) => ({ id: i.id as string, stageId: i.stage_id as string, title: i.title as string, qty: i.qty as number, note: null, dueDate: i.due_date as string | null, sortOrder: i.sort_order as number })),
   });
@@ -106,9 +106,6 @@ function cascade(table: string, ids: string[]) {
   } else if (table === "stages") {
     drop("stage_connections", (r) => ids.includes(r.source_stage_id as string) || ids.includes(r.target_stage_id as string));
     drop("items", (r) => ids.includes(r.stage_id as string));
-    d.stages.forEach((s) => {
-      if (ids.includes(s.parent_group_id as string)) s.parent_group_id = null;
-    });
   } else if (table === "runs") {
     drop("stage_runs", (r) => ids.includes(r.run_id as string));
     drop("run_items", (r) => ids.includes(r.run_id as string));

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { RunItemRow } from "@/lib/run/derive";
-import { acknowledge, enqueue, isNetworkError, mergeItems, mergeStages, parseQueue, type PendingOp } from "./queue";
+import { acknowledge, enqueue, isNetworkError, mergeItems, mergeOutputs, mergeStages, parseQueue, type PendingOp } from "./queue";
 
 const item = (id: string, status: "TODO" | "DONE", updated_at: string): RunItemRow => ({
   id, run_id: "r", stage_id: "s", title: id, qty: 1, note: null, due_date: null, sort_order: 0, status, updated_at,
@@ -49,6 +49,15 @@ describe("merge", () => {
 
   it("merges stage statuses", () => {
     expect(mergeStages({ s1: "TODO" }, [{ kind: "stage", stageId: "s1", status: "DONE", updatedAt: "x" }])).toEqual({ s1: "DONE" });
+  });
+
+  it("merges stage outputs", () => {
+    expect(
+      mergeOutputs(
+        { s1: { text: "draf awal" } },
+        [{ kind: "stage", stageId: "s1", status: "DONE", outputs: { text: "revisi terbaru" }, updatedAt: "x" }],
+      ),
+    ).toEqual({ s1: { text: "revisi terbaru" } });
   });
 });
 

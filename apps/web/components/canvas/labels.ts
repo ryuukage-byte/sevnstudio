@@ -3,6 +3,7 @@ export const typeLabel: Record<string, string> = {
   checklist: "Ceklis",
   task: "Tugas",
   note: "Catatan",
+  input: "Isian",
   group: "Kelompok",
   review: "Review",
   ai: "AI",

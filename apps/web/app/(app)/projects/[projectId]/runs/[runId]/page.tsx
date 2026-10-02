@@ -17,12 +17,16 @@ export default async function RunPage({ params }: PageProps<"/projects/[projectI
   const { data: project } = await supabase.from("projects").select("name").eq("id", projectId).maybeSingle();
 
   const [stageRuns, items] = await Promise.all([
-    supabase.from("stage_runs").select("stage_id, status").eq("run_id", runId),
+    supabase.from("stage_runs").select("stage_id, status, outputs").eq("run_id", runId),
     supabase.from("run_items").select("*").eq("run_id", runId).order("sort_order"),
   ]);
 
   const stored: Record<string, StoredStatus> = {};
-  for (const r of stageRuns.data ?? []) stored[r.stage_id] = r.status as StoredStatus;
+  const outputs: Record<string, Record<string, unknown>> = {};
+  for (const r of stageRuns.data ?? []) {
+    stored[r.stage_id] = r.status as StoredStatus;
+    if (r.outputs && typeof r.outputs === "object") outputs[r.stage_id] = r.outputs as Record<string, unknown>;
+  }
 
   return (
     <RunView
@@ -33,6 +37,7 @@ export default async function RunPage({ params }: PageProps<"/projects/[projectI
       workflowId={(run.workflow_id as string | null) ?? null}
       snapshot={snapshotSchema.parse(run.snapshot)}
       initialStored={stored}
+      initialOutputs={outputs}
       initialItems={(items.data ?? []) as RunItemRow[]}
     />
   );

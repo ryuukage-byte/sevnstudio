@@ -5,7 +5,7 @@ import {
 } from "./state";
 
 const stage = (id: string, type = "checklist", extra: Partial<StageRow> = {}): StageRow => ({
-  id, workflow_id: "w", type, name: id, config: {}, mode: "manual", pos_x: 0, pos_y: 0, parent_group_id: null, ...extra,
+  id, workflow_id: "w", type, name: id, config: {}, mode: "manual", pos_x: 0, pos_y: 0, ...extra,
 });
 const edge = (id: string, s: string, t: string): EdgeRow => ({
   id, workflow_id: "w", source_stage_id: s, target_stage_id: t, kind: "blocking", source_port: "text", target_port: "text",
@@ -13,7 +13,7 @@ const edge = (id: string, s: string, t: string): EdgeRow => ({
 const item = (id: string, stage_id: string): ItemRow => ({ id, stage_id, title: id, qty: 1, note: null, due_date: null, sort_order: 0 });
 
 const base: EditorState = {
-  stages: [stage("g", "group"), stage("a", "checklist", { parent_group_id: "g" }), stage("b")],
+  stages: [stage("a", "checklist"), stage("b", "task")],
   edges: [edge("e1", "a", "b")],
   items: [item("i1", "a"), item("i2", "b")],
 };
@@ -29,12 +29,10 @@ describe("applyOps", () => {
     expect(s.items.map((i) => i.id)).toEqual(["i1"]);
   });
 
-  it("deleting a stage cascades to edges/items and un-parents group members", () => {
+  it("deleting a stage cascades to edges/items", () => {
     expect(applyOps(base, [{ table: "stages", kind: "delete", id: "a" }])).toMatchObject({
       edges: [], items: [{ id: "i2" }],
     });
-    const s = applyOps(base, [{ table: "stages", kind: "delete", id: "g" }]);
-    expect(s.stages.find((x) => x.id === "a")?.parent_group_id).toBeNull();
   });
 
   it("insert of an existing id replaces it (idempotent redo)", () => {

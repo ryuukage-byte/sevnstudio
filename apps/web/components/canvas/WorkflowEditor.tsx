@@ -10,8 +10,8 @@ import {
 import { validateConnection, type ConnectionError } from "@sevn/engine";
 import { getHandler, stageTypes, type StageType } from "@sevn/handlers";
 
-// Kelompok is derived from lines now, so "group" is no longer something you add by hand.
-const addableTypes = stageTypes.filter((t) => t !== "group");
+// All registered stage types in handlers are addable to the canvas.
+const addableTypes = stageTypes;
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { persistOp } from "@/lib/editor/persist";

@@ -4,24 +4,26 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { StoredStatus } from "@sevn/engine";
 import { createClient } from "@/lib/supabase/client";
 import type { RunItemRow } from "@/lib/run/derive";
-import { acknowledge, enqueue, isNetworkError, mergeItems, mergeStages, parseQueue, type PendingOp } from "./queue";
+import { acknowledge, enqueue, isNetworkError, mergeItems, mergeOutputs, mergeStages, parseQueue, type PendingOp } from "./queue";
 
 interface Args {
   runId: string;
   initialItems: RunItemRow[];
   initialStored: Record<string, StoredStatus>;
+  initialOutputs?: Record<string, Record<string, unknown>>;
 }
 
 /**
  * Optimistic run state with an offline write queue (persisted in localStorage, so it survives reloads).
  * UI updates instantly; changes are delivered per item when online, last-write-wins.
  */
-export function useRunSync({ runId, initialItems, initialStored }: Args) {
+export function useRunSync({ runId, initialItems, initialStored, initialOutputs = {} }: Args) {
   const supabase = useMemo(() => createClient(), []);
   const storageKey = `sevn:queue:${runId}`;
 
   const [serverItems, setServerItems] = useState(initialItems);
   const [serverStored, setServerStored] = useState(initialStored);
+  const [serverOutputs, setServerOutputs] = useState<Record<string, Record<string, unknown>>>(initialOutputs);
   const [queue, setQueue] = useState<PendingOp[]>([]);
   const [online, setOnline] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,11 +46,20 @@ export function useRunSync({ runId, initialItems, initialStored }: Args) {
 
   const send = useCallback(
     async (op: PendingOp): Promise<"ok" | "network" | "rejected"> => {
-      const { error: err } =
-        op.kind === "item"
-          ? // updated_at guard makes a late, older write lose against a newer server row
-            await supabase.from("run_items").update({ status: op.status, updated_at: op.updatedAt }).eq("id", op.id).lt("updated_at", op.updatedAt)
-          : await supabase.from("stage_runs").upsert({ run_id: runId, stage_id: op.stageId, status: op.status }, { onConflict: "run_id,stage_id" });
+      let err: { message?: string } | null = null;
+      if (op.kind === "item") {
+        const res = await supabase
+          .from("run_items")
+          .update({ status: op.status, updated_at: op.updatedAt })
+          .eq("id", op.id)
+          .lt("updated_at", op.updatedAt);
+        err = res.error;
+      } else {
+        const payload: Record<string, unknown> = { run_id: runId, stage_id: op.stageId, status: op.status };
+        if (op.outputs) payload.outputs = op.outputs;
+        const res = await supabase.from("stage_runs").upsert(payload, { onConflict: "run_id,stage_id" });
+        err = res.error;
+      }
       if (!err) return "ok";
       if (isNetworkError(err.message, navigator.onLine)) return "network";
       setError("Perubahan tidak bisa disimpan: " + err.message);
@@ -72,6 +83,7 @@ export function useRunSync({ runId, initialItems, initialStored }: Args) {
             );
           } else {
             setServerStored((s) => ({ ...s, [op.stageId]: op.status }));
+            if (op.outputs) setServerOutputs((o) => ({ ...o, [op.stageId]: op.outputs! }));
           }
         }
         persist(acknowledge(queueRef.current, op));
@@ -113,6 +125,7 @@ export function useRunSync({ runId, initialItems, initialStored }: Args) {
 
   const items = useMemo(() => mergeItems(serverItems, queue), [serverItems, queue]);
   const stored = useMemo(() => mergeStages(serverStored, queue), [serverStored, queue]);
+  const outputs = useMemo(() => mergeOutputs(serverOutputs, queue), [serverOutputs, queue]);
 
   const push = useCallback(
     (op: PendingOp) => {
@@ -134,9 +147,10 @@ export function useRunSync({ runId, initialItems, initialStored }: Args) {
   );
 
   const setStageStatus = useCallback(
-    (stageId: string, status: StoredStatus) => push({ kind: "stage", stageId, status, updatedAt: new Date().toISOString() }),
+    (stageId: string, status: StoredStatus, stageOutputs?: Record<string, unknown>) =>
+      push({ kind: "stage", stageId, status, outputs: stageOutputs, updatedAt: new Date().toISOString() }),
     [push],
   );
 
-  return { items, stored, pending: queue.length, online, error, setItemStatus, setStageStatus };
+  return { items, stored, outputs, pending: queue.length, online, error, setItemStatus, setStageStatus };
 }

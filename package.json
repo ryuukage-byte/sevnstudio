@@ -4,7 +4,9 @@
   "packageManager": "pnpm@12.8.1",
   "scripts": {
     "test": "pnpm -r --if-present test",
-    "typecheck": "pnpm -r --if-present typecheck"
+    "typecheck": "pnpm -r --if-present typecheck",
+    "db:concat": "node scripts/build-all-migrations.mjs",
+    "db:concat:check": "node scripts/build-all-migrations.mjs --check"
   },
   "devDependencies": {
     "typescript": "^5.6.0",

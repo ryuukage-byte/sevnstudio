@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { RunItemRow } from "@/lib/run/derive";
 import { statusLabel, statusTone } from "@/components/canvas/labels";
+import { InputStageEditor } from "./InputStageEditor";
 
 interface Props {
   snapshot: Snapshot;
@@ -14,12 +15,14 @@ interface Props {
   statuses: Record<string, DerivedStatus>;
   blockedBy: Record<string, string[]>;
   progress: Record<string, string>;
+  outputs?: Record<string, Record<string, unknown>>;
   onToggleItem: (item: RunItemRow) => void;
   onStageEvent: (stageId: string, event: "SET_DOING" | "SET_DONE" | "SET_TODO") => void;
+  onSaveInput?: (stageId: string, text: string, markDone: boolean) => void;
 }
 
 /** Mobile-first vertical list of the run: sectioned by kelompok (steps joined by lines), in flow order, big touch targets. */
-export function ChecklistMode({ snapshot, items, statuses, blockedBy, progress, onToggleItem, onStageEvent }: Props) {
+export function ChecklistMode({ snapshot, items, statuses, blockedBy, progress, outputs, onToggleItem, onStageEvent, onSaveInput }: Props) {
   const sections = useMemo(() => {
     const { nodes, edges } = snapshotToGraph(snapshot, (t) => getHandler(t)?.statusModel ?? "none");
     const byId = new Map(snapshot.stages.map((s) => [s.id, s] as const));
@@ -91,6 +94,21 @@ export function ChecklistMode({ snapshot, items, statuses, blockedBy, progress, 
                       <Button className="h-11 flex-1" disabled={!!blocked || status === "DONE"} onClick={() => onStageEvent(stage.id, "SET_DONE")}>Selesai</Button>
                       <Button className="h-11" variant="ghost" disabled={!!blocked || (status !== "DOING" && status !== "DONE")} onClick={() => onStageEvent(stage.id, "SET_TODO")}>Reset</Button>
                     </div>
+                  </div>
+                )}
+                {stage.type === "input" && (
+                  <div className="space-y-3 border-t border-border px-4 py-4">
+                    {stage.config.prompt ? (
+                      <p className="whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{String(stage.config.prompt)}</p>
+                    ) : null}
+                    <InputStageEditor
+                      initialValue={(outputs?.[stage.id]?.text as string) ?? ""}
+                      placeholder={(stage.config.placeholder as string) ?? "Tulis isian Anda di sini..."}
+                      disabled={!!blocked}
+                      isDone={status === "DONE"}
+                      onSave={(val, done) => onSaveInput?.(stage.id, val, done)}
+                      onReset={() => onStageEvent(stage.id, "SET_TODO")}
+                    />
                   </div>
                 )}
               </details>

@@ -195,11 +195,11 @@ Catatan penting: langkah "AI" di preset saat ini berupa **Tugas** berisi instruk
 | Workflow A berfungsi penuh tanpa worker | terbukti (tidak ada worker) |
 
 ### P1. Sebelum Fase 4
-- [ ] Jenis langkah **Isian** (formulir teks yang bisa diisi saat mengerjakan; keluaran bertipe `text` ke langkah berikutnya). Memenuhi aturan lingkup (satu handler).
-- [ ] Skrip pembuat `all-migrations.sql` dan `.gitattributes`.
+- [x] Jenis langkah **Isian** (formulir teks yang bisa diisi saat mengerjakan; keluaran bertipe `text` ke langkah berikutnya). Memenuhi aturan lingkup (satu handler).
+- [x] Skrip pembuat `all-migrations.sql` dan `.gitattributes`.
+- [x] Pembersihan data lama bertipe `group` / `parent_group_id` (migrasi 0012 + hapus dari kode).
+- [x] Pengaturan: kerangka penyimpanan API (UI di `/settings` siap untuk Vault Fase 4).
 - [ ] Uji RLS otomatis (dua pengguna) di CI.
-- [ ] Pembersihan data lama bertipe `group` / `parent_group_id` (migrasi + hapus dari kode).
-- [ ] Pengaturan: kerangka penyimpanan API (belum menerima kunci; menunggu Vault).
 
 ### Fase 4: AI dan API (inti sistem otomasi)
 Urutan kerja; setiap langkah memiliki tes sebelum disambung ke UI.

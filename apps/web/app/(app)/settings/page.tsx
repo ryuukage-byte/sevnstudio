@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PageHero, PageShell } from "@/components/app/Page";
-import { PasswordForm, ProfileForm } from "@/components/app/SettingsForms";
+import { AiSettingsSection, PasswordForm, ProfileForm } from "@/components/app/SettingsForms";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Pengaturan" };
@@ -38,16 +38,8 @@ export default async function SettingsPage() {
           <PasswordForm />
         </Section>
 
-        <Section id="pengaturan" title="Pengaturan">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <div className="text-sm font-medium">Hubungkan AI</div>
-              <p className="mt-1 max-w-md text-sm leading-6 text-muted-foreground">
-                Setelah API Anda terhubung, pilihan AI di tombol + pada beranda akan aktif.
-              </p>
-            </div>
-            <span className="sv-badge shrink-0">Segera hadir</span>
-          </div>
+        <Section id="pengaturan" title="Integrasi AI">
+          <AiSettingsSection />
         </Section>
       </div>
     </PageShell>

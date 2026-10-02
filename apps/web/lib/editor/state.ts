@@ -10,7 +10,7 @@ export interface StageRow {
   mode: "manual" | "semi_auto" | "auto";
   pos_x: number;
   pos_y: number;
-  parent_group_id: string | null;
+  parent_group_id?: string | null;
 }
 
 export interface EdgeRow {
@@ -55,9 +55,7 @@ const key = { stages: "stages", stage_connections: "edges", items: "items" } as 
 export function applyOp(state: EditorState, op: Op): EditorState {
   if (op.table === "stages" && op.kind === "delete") {
     return {
-      stages: state.stages
-        .filter((s) => s.id !== op.id)
-        .map((s) => (s.parent_group_id === op.id ? { ...s, parent_group_id: null } : s)),
+      stages: state.stages.filter((s) => s.id !== op.id),
       edges: state.edges.filter((e) => e.source_stage_id !== op.id && e.target_stage_id !== op.id),
       items: state.items.filter((i) => i.stage_id !== op.id),
     };
@@ -75,18 +73,16 @@ export function applyOps(state: EditorState, ops: readonly Op[]): EditorState {
   return ops.reduce(applyOp, state);
 }
 
-/** Ops that delete a stage, plus the ops that restore it (stage first, then its edges, items and group members). */
+/** Ops that delete a stage, plus the ops that restore it (stage first, then its edges and items). */
 export function deleteStageOps(state: EditorState, id: string): { forward: Op[]; backward: Op[] } {
   const stage = state.stages.find((s) => s.id === id);
   if (!stage) return { forward: [], backward: [] };
   const edges = state.edges.filter((e) => e.source_stage_id === id || e.target_stage_id === id);
   const items = state.items.filter((i) => i.stage_id === id);
-  const members = state.stages.filter((s) => s.parent_group_id === id);
   return {
     forward: [{ table: "stages", kind: "delete", id }],
     backward: [
       { table: "stages", kind: "insert", row: stage },
-      ...members.map((m): Op => ({ table: "stages", kind: "update", id: m.id, patch: { parent_group_id: id } })),
       ...edges.map((row): Op => ({ table: "stage_connections", kind: "insert", row })),
       ...items.map((row): Op => ({ table: "items", kind: "insert", row })),
     ],

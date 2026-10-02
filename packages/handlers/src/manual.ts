@@ -35,12 +35,24 @@ export const noteHandler: StageHandler<{ body: string }> = {
   statusModel: "task",
 };
 
-/** Visual grouping only; not a work stage, so it has no status and no ports. */
-export const groupHandler: StageHandler<{ color?: string }> = {
-  type: "group",
-  configSchema: z.object({ color: z.string().max(30).optional() }).strict(),
+export const inputHandler: StageHandler<{
+  prompt?: string;
+  placeholder?: string;
+  minLength?: number;
+  maxLength?: number;
+}> = {
+  type: "input",
+  configSchema: z
+    .object({
+      prompt: z.string().max(1000).optional(),
+      placeholder: z.string().max(200).optional(),
+      minLength: z.number().int().min(0).max(10000).optional(),
+      maxLength: z.number().int().min(1).max(50000).optional(),
+    })
+    .strict(),
   inputPorts: [],
-  outputPorts: [],
+  outputPorts: text,
   defaultMode: "manual",
-  statusModel: "none",
+  statusModel: "task",
 };
+

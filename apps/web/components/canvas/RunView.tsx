@@ -15,6 +15,7 @@ import { pickHandles } from "@/lib/canvas/handles";
 import { cn } from "@/lib/utils";
 import { StageNodeView, type StageFlowNode } from "./StageNodeView";
 import { statusLabel, statusTone, typeLabel } from "./labels";
+import { InputStageEditor } from "@/components/run/InputStageEditor";
 
 const nodeTypes = { stage: StageNodeView };
 
@@ -26,11 +27,12 @@ interface Props {
   runName: string;
   snapshot: Snapshot;
   initialStored: Record<string, StoredStatus>;
+  initialOutputs?: Record<string, Record<string, unknown>>;
   initialItems: RunItemRow[];
 }
 
-export function RunView({ projectId, projectName, workflowId, runId, runName, snapshot, initialStored, initialItems }: Props) {
-  const { items, stored, pending, online, error, setItemStatus, setStageStatus } = useRunSync({ runId, initialItems, initialStored });
+export function RunView({ projectId, projectName, workflowId, runId, runName, snapshot, initialStored, initialOutputs, initialItems }: Props) {
+  const { items, stored, outputs, pending, online, error, setItemStatus, setStageStatus } = useRunSync({ runId, initialItems, initialStored, initialOutputs });
   const [view, setView] = useState<"list" | "canvas">("canvas");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -72,6 +74,13 @@ export function RunView({ projectId, projectName, workflowId, runId, runName, sn
     if (!stage || !model || runView.blockedBy[stageId]) return;
     const result = transition(model, stored[stageId], event, stage.mode);
     if (result.ok) setStageStatus(stageId, result.status);
+  };
+
+  const saveStageInput = (stageId: string, text: string, markDone: boolean) => {
+    const stage = stagesById.get(stageId);
+    if (!stage || runView.blockedBy[stageId]) return;
+    const nextStatus = markDone ? "DONE" : (stored[stageId] ?? "TODO");
+    setStageStatus(stageId, nextStatus, { text });
   };
 
   const baseNodes = useMemo<StageFlowNode[]>(
@@ -185,8 +194,10 @@ export function RunView({ projectId, projectName, workflowId, runId, runName, sn
             statuses={runView.statuses}
             blockedBy={runView.blockedBy}
             progress={runView.progress}
+            outputs={outputs}
             onToggleItem={toggleItem}
             onStageEvent={fireEvent}
+            onSaveInput={saveStageInput}
           />
         </div>
       ) : (
@@ -270,6 +281,21 @@ export function RunView({ projectId, projectName, workflowId, runId, runName, sn
                       <Button size="sm" disabled={!!selBlocked || selStatus === "DONE"} onClick={() => fireEvent(selected.id, "SET_DONE")}>Selesai</Button>
                       <Button size="sm" variant="ghost" disabled={!!selBlocked || (selStatus !== "DOING" && selStatus !== "DONE")} onClick={() => fireEvent(selected.id, "SET_TODO")}>Reset</Button>
                     </div>
+                  </div>
+                )}
+                {selected.type === "input" && (
+                  <div className="space-y-3">
+                    {selected.config.prompt ? (
+                      <p className="whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{String(selected.config.prompt)}</p>
+                    ) : null}
+                    <InputStageEditor
+                      initialValue={(outputs[selected.id]?.text as string) ?? ""}
+                      placeholder={(selected.config.placeholder as string) ?? "Tulis isian Anda di sini..."}
+                      disabled={!!selBlocked}
+                      isDone={selStatus === "DONE"}
+                      onSave={(val, done) => saveStageInput(selected.id, val, done)}
+                      onReset={() => fireEvent(selected.id, "SET_TODO")}
+                    />
                   </div>
                 )}
               </>

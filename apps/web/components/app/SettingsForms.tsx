@@ -50,3 +50,39 @@ export function PasswordForm() {
     </form>
   );
 }
+
+export function AiSettingsSection() {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="text-sm font-medium">Penyedia AI & Kunci API</div>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            Hubungkan model AI untuk mengotomatiskan langkah riset, pembuatan draf, dan orkestrasi alur kerja.
+          </p>
+        </div>
+        <span className="sv-badge shrink-0" data-tone="warn">Fase 4: Vault</span>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        {[
+          { name: "Google Gemini", note: "Flash / Pro" },
+          { name: "OpenAI", note: "GPT-4o / mini" },
+          { name: "Anthropic", note: "Claude 3.5 Sonnet" },
+        ].map((p) => (
+          <div key={p.name} className="rounded-xl border border-border bg-[#0a0a0a] p-3 text-left">
+            <div className="flex items-center justify-between text-sm font-medium">
+              <span>{p.name}</span>
+              <span className="size-2 rounded-full bg-muted" />
+            </div>
+            <div className="mt-1 text-xs text-muted-foreground">{p.note}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="rounded-xl border border-dashed border-border-strong bg-white/[0.01] p-4 text-xs leading-relaxed text-muted-foreground">
+        <strong className="font-medium text-foreground">Keamanan Vault:</strong> Di Fase 4, semua kunci API disimpan langsung di Supabase Vault terenkripsi dan hanya di-resolve oleh worker terisolasi. Browser dan config alur kerja tidak pernah menyimpan kunci rahasia.
+      </div>
+    </div>
+  );
+}

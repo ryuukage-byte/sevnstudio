@@ -5,7 +5,7 @@ import type { RunItemRow } from "@/lib/run/derive";
 
 export type PendingOp =
   | { kind: "item"; id: string; status: "TODO" | "DONE"; updatedAt: string }
-  | { kind: "stage"; stageId: string; status: StoredStatus; updatedAt: string };
+  | { kind: "stage"; stageId: string; status: StoredStatus; outputs?: Record<string, unknown>; updatedAt: string };
 
 export const opKey = (op: PendingOp) => (op.kind === "item" ? `item:${op.id}` : `stage:${op.stageId}`);
 
@@ -40,6 +40,16 @@ export function mergeStages(
 ): Record<string, StoredStatus> {
   const out: Record<string, StoredStatus> = { ...server };
   for (const op of queue) if (op.kind === "stage") out[op.stageId] = op.status;
+  return out;
+}
+
+/** Applies pending stage outputs over stored stage outputs. */
+export function mergeOutputs(
+  server: Readonly<Record<string, Record<string, unknown>>>,
+  queue: readonly PendingOp[],
+): Record<string, Record<string, unknown>> {
+  const out: Record<string, Record<string, unknown>> = { ...server };
+  for (const op of queue) if (op.kind === "stage" && op.outputs) out[op.stageId] = op.outputs;
   return out;
 }
 

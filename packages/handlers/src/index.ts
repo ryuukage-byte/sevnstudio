@@ -1,5 +1,5 @@
 import type { StageHandler } from "./contract";
-import { checklistHandler, groupHandler, noteHandler, taskHandler } from "./manual";
+import { checklistHandler, inputHandler, noteHandler, taskHandler } from "./manual";
 
 export * from "./contract";
 export * from "./manual";
@@ -9,7 +9,7 @@ export const handlers = {
   checklist: checklistHandler,
   task: taskHandler,
   note: noteHandler,
-  group: groupHandler,
+  input: inputHandler,
 } as const satisfies Record<string, StageHandler<any>>;
 
 export type StageType = keyof typeof handlers;
