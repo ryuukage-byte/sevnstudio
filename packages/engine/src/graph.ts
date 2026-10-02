@@ -64,6 +64,44 @@ export function descendants(
   return [...seen];
 }
 
+/**
+ * Kelompok are derived, never stored: steps joined by lines (either kind) belong to the same kelompok.
+ * Returns kelompok of two or more steps (each in flow order, kelompok ordered by their first step) and the
+ * unconnected steps in `loose`. Legacy group stages (model "none") are ignored.
+ */
+export function connectedGroups(
+  nodes: readonly StageNode[],
+  edges: readonly Edge[],
+): { groups: string[][]; loose: string[] } {
+  const work = nodes.filter((n) => n.model !== "none");
+  const ids = new Set(work.map((n) => n.id));
+  const parent = new Map(work.map((n) => [n.id, n.id] as const));
+  const find = (x: string): string => {
+    let r = x;
+    while (parent.get(r) !== r) r = parent.get(r) as string;
+    parent.set(x, r); // path compression
+    return r;
+  };
+  for (const e of edges) {
+    if (!ids.has(e.source) || !ids.has(e.target)) continue;
+    parent.set(find(e.source), find(e.target));
+  }
+
+  const order = topoOrder(work, edges.filter((e) => ids.has(e.source) && ids.has(e.target))) ?? work.map((n) => n.id);
+  const buckets = new Map<string, string[]>();
+  for (const id of order) {
+    const root = find(id);
+    const list = buckets.get(root);
+    if (list) list.push(id);
+    else buckets.set(root, [id]);
+  }
+  const all = [...buckets.values()];
+  return {
+    groups: all.filter((g) => g.length > 1),
+    loose: all.filter((g) => g.length === 1).map((g) => g[0] as string),
+  };
+}
+
 export type ConnectionError = "unknown_stage" | "self_loop" | "group_edge" | "duplicate" | "cycle";
 
 /** Validates a proposed new edge against the current graph. Returns null when allowed. */

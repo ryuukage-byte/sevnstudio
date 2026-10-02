@@ -20,7 +20,6 @@ const textareaClass =
   "min-h-24 w-full rounded-xl border border-border bg-[#0a0a0a] px-3.5 py-2.5 text-sm outline-none focus-visible:border-white/25 focus-visible:ring-4 focus-visible:ring-white/[0.03]";
 
 export function StageWorkspace({ state, stage, commit, apply }: Props) {
-  const groups = state.stages.filter((s) => s.type === "group" && s.id !== stage.id);
   const items = state.items.filter((i) => i.stage_id === stage.id).sort((a, b) => a.sort_order - b.sort_order);
 
   const setConfig = (key: string, value: string) => {
@@ -53,29 +52,6 @@ export function StageWorkspace({ state, stage, commit, apply }: Props) {
         />
       </div>
 
-      {stage.type !== "group" && groups.length > 0 && (
-        <div className="space-y-1.5">
-          <Label htmlFor="stage-group">Kelompok</Label>
-          <select
-            id="stage-group"
-            className="h-10 w-full rounded-xl border border-border bg-[#0a0a0a] px-3 text-sm"
-            value={stage.parent_group_id ?? ""}
-            onChange={(e) => {
-              const next = e.target.value || null;
-              commit(
-                "group",
-                [{ table: "stages", kind: "update", id: stage.id, patch: { parent_group_id: next } }],
-                [{ table: "stages", kind: "update", id: stage.id, patch: { parent_group_id: stage.parent_group_id } }],
-              );
-            }}
-          >
-            <option value="">(tanpa kelompok)</option>
-            {groups.map((g) => (
-              <option key={g.id} value={g.id}>{g.name}</option>
-            ))}
-          </select>
-        </div>
-      )}
 
       {stage.type === "task" && (
         <>

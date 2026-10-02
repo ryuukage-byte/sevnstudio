@@ -88,7 +88,6 @@ export function RunView({ projectId, projectName, workflowId, runId, runName, sn
           data: {
             name: s.name,
             type: s.type,
-            groupName: snapshot.stages.find((g) => g.id === s.parentGroupId)?.name ?? null,
             status: s.type === "group" ? undefined : runView.statuses[s.id],
             progress: runView.progress[s.id],
             lockReason: blocked ? `Selesaikan dulu: ${blocked.join(", ")}` : undefined,

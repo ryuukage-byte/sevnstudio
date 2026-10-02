@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { topoOrder, snapshotToGraph, type DerivedStatus, type Snapshot } from "@sevn/engine";
+import { connectedGroups, snapshotToGraph, type DerivedStatus, type Snapshot } from "@sevn/engine";
 import { getHandler } from "@sevn/handlers";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -18,20 +18,21 @@ interface Props {
   onStageEvent: (stageId: string, event: "SET_DOING" | "SET_DONE" | "SET_TODO") => void;
 }
 
-/** Mobile-first vertical list of the run: grouped by Kelompok, ordered along the edges, big touch targets. */
+/** Mobile-first vertical list of the run: sectioned by kelompok (steps joined by lines), in flow order, big touch targets. */
 export function ChecklistMode({ snapshot, items, statuses, blockedBy, progress, onToggleItem, onStageEvent }: Props) {
   const sections = useMemo(() => {
     const { nodes, edges } = snapshotToGraph(snapshot, (t) => getHandler(t)?.statusModel ?? "none");
-    const order = topoOrder(nodes, edges) ?? nodes.map((n) => n.id);
-    const rank = new Map(order.map((id, i) => [id, i] as const));
-    const work = snapshot.stages.filter((s) => s.type !== "group").sort((a, b) => (rank.get(a.id) ?? 0) - (rank.get(b.id) ?? 0));
-    const groups = snapshot.stages.filter((s) => s.type === "group");
-    const result = groups
-      .map((g) => ({ key: g.id, title: g.name, stages: work.filter((s) => s.parentGroupId === g.id) }))
-      .filter((s) => s.stages.length);
-    const loose = work.filter((s) => !s.parentGroupId || !groups.some((g) => g.id === s.parentGroupId));
-    if (loose.length) result.push({ key: "loose", title: groups.length ? "Lainnya" : "", stages: loose });
-    return result;
+    const byId = new Map(snapshot.stages.map((s) => [s.id, s] as const));
+    // Kelompok = steps joined by lines. Unconnected steps go under "Lainnya". Headings only when there is more than one section.
+    const { groups, loose } = connectedGroups(nodes, edges);
+    const pick = (ids: string[]) => ids.map((id) => byId.get(id)).filter((s): s is NonNullable<typeof s> => !!s);
+    const result = groups.map((ids) => ({ key: ids[0] as string, title: "", stages: pick(ids) }));
+    if (loose.length) result.push({ key: "loose", title: "", stages: pick(loose) });
+    const multiple = result.length > 1;
+    return result.map((s, i) => ({
+      ...s,
+      title: !multiple ? "" : s.key === "loose" ? "Lainnya" : `Kelompok ${i + 1}: ${s.stages[0]?.name ?? ""}`,
+    }));
   }, [snapshot]);
 
   return (

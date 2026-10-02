@@ -7,7 +7,6 @@ import { statusLabel, statusTone, typeLabel } from "./labels";
 export interface StageNodeData extends Record<string, unknown> {
   name: string;
   type: string;
-  groupName: string | null;
   /** Derived status; only present in run view. */
   status?: string;
   /** Why the stage is locked; only present in run view. */
@@ -56,7 +55,6 @@ export function StageNodeView({ data, selected }: NodeProps<StageFlowNode>) {
       )}
       <div className="sv-label mb-1.5">{typeLabel[data.type] ?? data.type}</div>
       <div className="truncate font-[family-name:var(--font-heading)] text-[17px] font-medium leading-tight tracking-[-0.03em]">{data.name}</div>
-      {data.groupName && <div className="mt-1.5 truncate text-xs text-muted-foreground">Kelompok: {data.groupName}</div>}
       {data.status && (
         <div className="mt-3 flex items-center gap-2">
           <span className="sv-badge" data-tone={statusTone[data.status] ?? ""}>

@@ -9,6 +9,9 @@ import {
 } from "@xyflow/react";
 import { validateConnection, type ConnectionError } from "@sevn/engine";
 import { getHandler, stageTypes, type StageType } from "@sevn/handlers";
+
+// Kelompok is derived from lines now, so "group" is no longer something you add by hand.
+const addableTypes = stageTypes.filter((t) => t !== "group");
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { persistOp } from "@/lib/editor/persist";
@@ -203,7 +206,6 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, projectNam
         data: {
           name: s.name,
           type: s.type,
-          groupName: state.stages.find((g) => g.id === s.parent_group_id)?.name ?? null,
           onEdit: () => setEditingId(s.id),
           onDelete: () => deleteStage(s.id),
         },
@@ -331,7 +333,7 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, projectNam
             <MiniMap pannable zoomable nodeColor="#3a3a3a" maskColor="rgba(0,0,0,0.6)" className="hidden md:block" />
             <Panel position="top-left" className="flex flex-wrap items-center gap-1 rounded-2xl border border-border-strong bg-popover/90 p-1.5 shadow-xl backdrop-blur">
               <span className="sv-label px-2">Tambah langkah</span>
-              {stageTypes.map((t) => (
+              {addableTypes.map((t) => (
                 <Button key={t} size="sm" variant="ghost" onClick={() => addStage(t)}>{typeLabel[t]}</Button>
               ))}
             </Panel>
@@ -347,7 +349,7 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, projectNam
               style={{ left: menu.sx, top: menu.sy }}
             >
               <span className="px-2 py-1 text-xs text-muted-foreground">Tambah di sini</span>
-              {stageTypes.map((t) => (
+              {addableTypes.map((t) => (
                 <button
                   key={t}
                   role="menuitem"

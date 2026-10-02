@@ -1,20 +1,16 @@
 import type { Preset, PresetStage } from "./types";
 
-const AWAL = "Bahan awal";
-const PROSES = "Proses";
-const HASIL = "Hasil";
-
 type Link = Preset["links"][number];
 /** Blocking chain: each step waits for the one before it. */
 const seq = (...keys: string[]): Link[] => keys.slice(1).map((k, i) => [keys[i] as string, k, "blocking"] as Link);
 
-const task = (key: string, name: string, text: string, group = PROSES, decision = false): PresetStage => ({
-  key, type: "task", name, text, group, decision,
+const task = (key: string, name: string, text: string, decision = false): PresetStage => ({
+  key, type: "task", name, text, decision,
 });
-const decide = (key: string, name: string, text: string): PresetStage => task(key, name, text, PROSES, true);
-const rules = (text: string): PresetStage => ({ key: "aturan", type: "note", name: "Aturan penting", text, group: AWAL });
-const results = (name: string, items: string[]): PresetStage => ({ key: "hasil", type: "checklist", name, items, group: HASIL });
-const input = (text: string, name = "Isi bahan awal"): PresetStage => task("input", name, text, AWAL);
+const decide = (key: string, name: string, text: string): PresetStage => task(key, name, text, true);
+const rules = (text: string): PresetStage => ({ key: "aturan", type: "note", name: "Aturan penting", text });
+const results = (name: string, items: string[]): PresetStage => ({ key: "hasil", type: "checklist", name, items });
+const input = (text: string, name = "Isi bahan awal"): PresetStage => task("input", name, text);
 
 // ───────────────────────────── OTOMATIS ─────────────────────────────
 

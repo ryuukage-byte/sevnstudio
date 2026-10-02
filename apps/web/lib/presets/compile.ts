@@ -5,14 +5,12 @@ const COLS = 4;
 const X0 = 40;
 const DX = 290;
 const DY = 170;
-const GROUP_Y = 20;
 const NOTE_GAP = 150;
-const CHAIN_Y = 310;
+const CHAIN_Y = 220;
 
 /**
- * Layout: groups on the top row; the step chain runs in a zig-zag (left→right, then right→left, ...) so each wrap is a short
- * vertical link; notes sit just above the step they refer to. Every group becomes a real `group` stage so the "Daftar" view
- * can section by it.
+ * Layout: the step chain runs in a zig-zag (left→right, then right→left, ...) so each wrap is a short vertical link;
+ * notes sit just above the step they refer to. No groups are stored: kelompok come from the lines between steps.
  */
 function layout(preset: Preset): Map<string, { x: number; y: number }> {
   const pos = new Map<string, { x: number; y: number }>();
@@ -32,33 +30,19 @@ function layout(preset: Preset): Map<string, { x: number; y: number }> {
 
 /** Turns a preset into a snapshot (stages + links + items) with fresh ids. */
 export function compilePreset(preset: Preset, newId: () => string): Snapshot {
-  const groupNames = [...new Set(preset.stages.map((s) => s.group))];
-  const groupIds = new Map(groupNames.map((g) => [g, newId()] as const));
   const stageIds = new Map(preset.stages.map((s) => [s.key, newId()] as const));
   const where = layout(preset);
 
-  const stages = [
-    ...groupNames.map((g, i) => ({
-      id: groupIds.get(g) as string,
-      type: "group",
-      name: g,
-      config: {},
-      mode: "manual" as const,
-      posX: X0 + i * DX,
-      posY: GROUP_Y,
-      parentGroupId: null,
-    })),
-    ...preset.stages.map((s) => ({
-      id: stageIds.get(s.key) as string,
-      type: s.type,
-      name: s.name,
-      config: s.type === "task" ? (s.text ? { notes: s.text } : {}) : s.type === "note" ? { body: s.text ?? "" } : {},
-      mode: "manual" as const,
-      posX: where.get(s.key)?.x ?? X0,
-      posY: where.get(s.key)?.y ?? CHAIN_Y,
-      parentGroupId: groupIds.get(s.group) as string,
-    })),
-  ];
+  const stages = preset.stages.map((s) => ({
+    id: stageIds.get(s.key) as string,
+    type: s.type,
+    name: s.name,
+    config: s.type === "task" ? (s.text ? { notes: s.text } : {}) : s.type === "note" ? { body: s.text ?? "" } : {},
+    mode: "manual" as const,
+    posX: where.get(s.key)?.x ?? X0,
+    posY: where.get(s.key)?.y ?? CHAIN_Y,
+    parentGroupId: null,
+  }));
 
   const edges = preset.links.map(([from, to, kind]) => {
     const source = stageIds.get(from);
@@ -82,11 +66,10 @@ export function compilePreset(preset: Preset, newId: () => string): Snapshot {
   return buildSnapshot({ stages, edges, items });
 }
 
-/** Database rows for copying a snapshot into an editable workflow. Groups come first so the parent-group trigger passes. */
+/** Database rows for copying a snapshot into an editable workflow. */
 export function snapshotToRows(snapshot: Snapshot, workflowId: string) {
-  const ordered = [...snapshot.stages].sort((a, b) => Number(b.type === "group") - Number(a.type === "group"));
   return {
-    stages: ordered.map((s) => ({
+    stages: snapshot.stages.map((s) => ({
       id: s.id,
       workflow_id: workflowId,
       type: s.type,

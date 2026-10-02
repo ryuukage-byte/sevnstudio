@@ -8,8 +8,6 @@ export interface PresetStage {
   key: string;
   type: "task" | "checklist" | "note";
   name: string;
-  /** Kelompok (visual group) this stage belongs to. */
-  group: string;
   /** Task: instruction text shown in the run. Note: the note body. */
   text?: string;
   /** Checklist: the items. */

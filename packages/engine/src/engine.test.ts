@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  autoRunnable, checklistStatus, deriveAll, deriveStatus, hasCycle, lockReasons,
+  autoRunnable, checklistStatus, connectedGroups, deriveAll, deriveStatus, hasCycle, lockReasons,
   staleTargets, topoOrder, transition, validateConnection,
   type Edge, type Mode, type StageNode, type StatusMap,
 } from "./index";
@@ -155,5 +155,41 @@ describe("graph", () => {
     expect(validateConnection(nodes, wfB.edges, "g", "idea")).toBe("group_edge");
     expect(validateConnection(nodes, wfB.edges, "idea", "zzz")).toBe("unknown_stage");
     expect(validateConnection(nodes, wfB.edges, "idea", "tts")).toBeNull();
+  });
+});
+
+describe("connectedGroups (kelompok derived from lines)", () => {
+  const w = (ids: string[]) => ids.map((id) => n(id, "task"));
+
+  it("joins steps connected by lines and leaves unconnected steps loose", () => {
+    const g = connectedGroups(w(["a", "b", "c", "d"]), [e("a", "b")]);
+    expect(g.groups).toEqual([["a", "b"]]);
+    expect(g.loose).toEqual(["c", "d"]);
+  });
+
+  it("treats flow lines like blocking lines", () => {
+    expect(connectedGroups(w(["a", "b"]), [e("a", "b", "flow")]).groups).toEqual([["a", "b"]]);
+  });
+
+  it("separates unrelated chains and orders each in flow order", () => {
+    const g = connectedGroups(w(["x", "b", "a", "y"]), [e("a", "b"), e("x", "y")]);
+    expect(g.groups).toEqual([["x", "y"], ["a", "b"]]);
+    expect(g.loose).toEqual([]);
+  });
+
+  it("merges chains once a line connects them", () => {
+    expect(connectedGroups(w(["a", "b", "c", "d"]), [e("a", "b"), e("c", "d"), e("b", "c")]).groups).toEqual([["a", "b", "c", "d"]]);
+  });
+
+  it("ignores legacy group stages and lines to them", () => {
+    const nodes = [n("g", "none"), n("a", "task"), n("b", "task")];
+    const g = connectedGroups(nodes, [e("a", "g"), e("a", "b")]);
+    expect(g.groups).toEqual([["a", "b"]]);
+    expect(g.loose).toEqual([]);
+  });
+
+  it("works with no lines and with no steps", () => {
+    expect(connectedGroups(w(["a", "b"]), [])).toEqual({ groups: [], loose: ["a", "b"] });
+    expect(connectedGroups([], [])).toEqual({ groups: [], loose: [] });
   });
 });

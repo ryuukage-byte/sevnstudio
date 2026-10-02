@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deriveAll, hasCycle, snapshotSchema, snapshotToGraph } from "@sevn/engine";
+import { connectedGroups, deriveAll, hasCycle, snapshotSchema, snapshotToGraph } from "@sevn/engine";
 import { getHandler } from "@sevn/handlers";
 import { compilePreset, snapshotToRows } from "./compile";
 import { presets } from "./data";
@@ -74,7 +74,7 @@ describe.each(presets.map((p) => [p.key, p] as const))("preset %s", (_key, prese
     const result = snapshot.stages.find((s) => s.type === "checklist")!;
     expect(d[result.id]).toBe("LOCKED");
     // exactly one work stage is open at the start besides the rules note
-    const open = snapshot.stages.filter((s) => s.type !== "group" && d[s.id] !== "LOCKED").map((s) => s.name);
+    const open = snapshot.stages.filter((s) => d[s.id] !== "LOCKED").map((s) => s.name);
     expect(open.sort()).toEqual(["Aturan penting", "Isi bahan awal"]);
   });
 
@@ -101,14 +101,19 @@ describe.each(presets.map((p) => [p.key, p] as const))("preset %s", (_key, prese
     }
   });
 
-  it("puts every stage in a group and groups first when copied to rows", () => {
-    expect(snapshot.stages.filter((s) => s.type !== "group").every((s) => s.parentGroupId)).toBe(true);
+  it("stores no groups: kelompok come from the lines, and everything forms one kelompok", () => {
+    expect(snapshot.stages.some((x) => x.type === "group")).toBe(false);
+    expect(snapshot.stages.every((x) => x.parentGroupId === null)).toBe(true);
+    const g = connectedGroups(nodes, edges);
+    expect(g.loose).toEqual([]);
+    expect(g.groups).toHaveLength(1);
+    expect(g.groups[0]).toHaveLength(snapshot.stages.length);
+  });
+
+  it("copies to database rows with unique ids and matching workflow", () => {
     const rows = snapshotToRows(snapshot, "wf");
-    const firstNonGroup = rows.stages.findIndex((s) => s.type !== "group");
-    expect(rows.stages.slice(0, firstNonGroup).every((s) => s.type === "group")).toBe(true);
-    const groupIds = new Set(rows.stages.filter((s) => s.type === "group").map((s) => s.id));
-    for (const s of rows.stages) if (s.parent_group_id) expect(groupIds.has(s.parent_group_id)).toBe(true);
-    expect(new Set(rows.stages.map((s) => s.id)).size).toBe(rows.stages.length);
-    expect(rows.edges.every((e) => e.workflow_id === "wf")).toBe(true);
+    expect(new Set(rows.stages.map((r) => r.id)).size).toBe(rows.stages.length);
+    expect(rows.stages.every((r) => r.workflow_id === "wf" && r.parent_group_id === null)).toBe(true);
+    expect(rows.edges.every((r) => r.workflow_id === "wf")).toBe(true);
   });
 });

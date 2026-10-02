@@ -38,13 +38,12 @@ function seed(): Db {
   db.projects.push({ id: projectId, owner_id: DEV_USER.id, name: "Trip Jepang Nov 2026 (contoh)", created_at: now(), updated_at: now() });
   db.workflows.push({ id: wfId, project_id: projectId, name: "Travel Checklist", created_at: now(), updated_at: now() });
 
-  const group = id(), docs = id(), booking = id(), packing = id(), tips = id();
+  const docs = id(), booking = id(), packing = id(), tips = id();
   const stage = (sid: string, type: string, name: string, x: number, y: number, config: object = {}, parent: string | null = null) =>
     db.stages.push({ id: sid, workflow_id: wfId, type, name, config, mode: "manual", pos_x: x, pos_y: y, parent_group_id: parent, created_at: now(), updated_at: now() });
-  stage(group, "group", "Sebelum berangkat", 40, 20);
-  stage(docs, "checklist", "Dokumen", 40, 150, {}, group);
-  stage(booking, "checklist", "Booking", 340, 150, {}, group);
-  stage(packing, "checklist", "Packing", 640, 150, {}, group);
+  stage(docs, "checklist", "Dokumen", 40, 150);
+  stage(booking, "checklist", "Booking", 340, 150);
+  stage(packing, "checklist", "Packing", 640, 150);
   stage(tips, "note", "Tips cuaca", 340, 320, { body: "Nov: 8-16 derajat. Bawa jaket tebal." });
 
   const edge = (s: string, t: string, kind: string) =>

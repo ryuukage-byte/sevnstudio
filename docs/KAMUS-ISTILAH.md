@@ -8,7 +8,7 @@ Teks yang dilihat pengguna memakai bahasa sehari-hari. Istilah teknis tetap dipa
 | Workflow | Alur kerja | "Susunan langkah yang bisa diubah" |
 | Stage | Langkah | |
 | Checklist / Task / Note | Ceklis / Tugas / Catatan | |
-| Group | Kelompok | |
+| (diturunkan dari garis) | Kelompok | Tidak dibuat manual. Langkah yang tersambung garis otomatis satu kelompok; yang tanpa garis masuk "Lainnya". Jenis langkah `group` lama masih bisa tampil, tetapi tidak bisa ditambah lagi. |
 | Item | Isi ceklis | |
 | Edge `blocking` | Harus urut | Langkah berikutnya menunggu |
 | Edge `flow` | Bebas urutan | Label garis: "bebas" |

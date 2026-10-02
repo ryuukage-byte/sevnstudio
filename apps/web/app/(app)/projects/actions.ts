@@ -42,12 +42,9 @@ export async function copyPresetToWorkflow(projectId: string, presetKey: string)
   if (error) throw error;
 
   const rows = snapshotToRows(compilePreset(preset, () => crypto.randomUUID()), workflow.id as string);
-  const groups = rows.stages.filter((s) => s.type === "group");
-  const others = rows.stages.filter((s) => s.type !== "group");
-  // Groups first (a stage's parent group must already exist), then stages, links and items.
+  // Stages first, then the links and items that point at them.
   for (const [table, batch] of [
-    ["stages", groups],
-    ["stages", others],
+    ["stages", rows.stages],
     ["stage_connections", rows.edges],
     ["items", rows.items],
   ] as const) {
