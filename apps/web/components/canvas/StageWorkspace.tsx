@@ -17,7 +17,7 @@ interface Props {
 }
 
 const textareaClass =
-  "min-h-24 w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
+  "min-h-24 w-full rounded-xl border border-border bg-[#0a0a0a] px-3.5 py-2.5 text-sm outline-none focus-visible:border-white/25 focus-visible:ring-4 focus-visible:ring-white/[0.03]";
 
 export function StageWorkspace({ state, stage, commit, apply }: Props) {
   const groups = state.stages.filter((s) => s.type === "group" && s.id !== stage.id);
@@ -58,7 +58,7 @@ export function StageWorkspace({ state, stage, commit, apply }: Props) {
           <Label htmlFor="stage-group">Kelompok</Label>
           <select
             id="stage-group"
-            className="h-8 w-full rounded-lg border border-input bg-transparent px-2 text-sm"
+            className="h-10 w-full rounded-xl border border-border bg-[#0a0a0a] px-3 text-sm"
             value={stage.parent_group_id ?? ""}
             onChange={(e) => {
               const next = e.target.value || null;
@@ -122,7 +122,7 @@ function ItemsEditor({ stageId, items, apply }: { stageId: string; items: ItemRo
       <Label>Isi ceklis ({items.length})</Label>
       <ul className="space-y-2">
         {items.map((item, idx) => (
-          <li key={item.id} className="space-y-1 rounded-lg border p-2">
+          <li key={item.id} className="space-y-1.5 rounded-xl border border-border bg-white/[0.02] p-2.5">
             <div className="flex items-center gap-1">
               <Input
                 defaultValue={item.title}
@@ -158,7 +158,7 @@ function ItemsEditor({ stageId, items, apply }: { stageId: string; items: ItemRo
               />
               <Button type="button" variant="ghost" size="sm" aria-label="Naik" disabled={idx === 0} onClick={() => swap(item, items[idx - 1])}>↑</Button>
               <Button type="button" variant="ghost" size="sm" aria-label="Turun" disabled={idx === items.length - 1} onClick={() => swap(item, items[idx + 1])}>↓</Button>
-              <Button type="button" variant="ghost" size="sm" onClick={() => apply([{ table: "items", kind: "delete", id: item.id }])}>Hapus</Button>
+              <Button type="button" variant="ghost" size="sm" aria-label="Hapus isi ini" title="Hapus isi ini" className="text-destructive" onClick={() => apply([{ table: "items", kind: "delete", id: item.id }])}>✕</Button>
             </div>
           </li>
         ))}

@@ -1,49 +1,32 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
+/* SevnSoul design language: dark, monochrome, tight type, mono micro-labels. Source: sevnsoul-theme.css (v10). */
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --radius: 0.625rem;
-}
-
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --background: #080808;
+  --foreground: #f4f4f2;
+  --card: #111111;
+  --card-foreground: #f4f4f2;
+  --popover: #141414;
+  --popover-foreground: #f4f4f2;
+  --primary: #f4f4f2;
+  --primary-foreground: #090909;
+  --secondary: #171717;
+  --secondary-foreground: #f4f4f2;
+  --muted: #171717;
+  --muted-foreground: rgba(244, 244, 242, 0.58);
+  --faint: rgba(244, 244, 242, 0.34);
+  --accent: #1e1e1e;
+  --accent-foreground: #f4f4f2;
+  --destructive: #ff7a7a;
+  --border: rgba(255, 255, 255, 0.075);
+  --border-strong: rgba(255, 255, 255, 0.145);
+  --input: rgba(255, 255, 255, 0.145);
+  --ring: rgba(255, 255, 255, 0.35);
+  --radius: 0.75rem;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -59,25 +42,194 @@
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-faint: var(--faint);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-input: var(--input);
   --color-ring: var(--ring);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --radius-2xl: 20px;
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-heading: var(--font-space), var(--font-inter), sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
+  html {
+    -webkit-font-smoothing: antialiased;
   }
+  body {
+    @apply bg-background text-foreground font-sans;
+    background-image:
+      radial-gradient(ellipse 900px 620px at 50% -12%, rgba(255, 255, 255, 0.045), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 82%, rgba(255, 255, 255, 0.018), transparent 62%);
+    background-attachment: fixed;
+  }
+  ::selection {
+    background: #f4f4f2;
+    color: #080808;
+  }
+  h1, h2, h3 {
+    font-family: var(--font-heading);
+    letter-spacing: -0.03em;
+  }
+}
+
+@layer components {
+  /* Small uppercase mono label (SevnSoul eyebrow / meta text). */
+  .sv-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  .sv-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  .sv-eyebrow::before {
+    content: "";
+    width: 26px;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.28);
+  }
+  .sv-card {
+    position: relative;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: linear-gradient(145deg, #141414, #0e0e0e);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.022);
+    transition: transform 0.5s var(--ease), border-color 0.4s ease;
+  }
+  a.sv-card:hover,
+  .sv-card.sv-hover:hover {
+    transform: translateY(-4px);
+    border-color: var(--border-strong);
+  }
+  .sv-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 9px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.025);
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+    white-space: nowrap;
+  }
+  .sv-badge::before {
+    content: "";
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.45);
+  }
+  .sv-badge[data-tone="active"]::before {
+    background: rgba(244, 244, 242, 0.55);
+    border-color: transparent;
+  }
+  .sv-badge[data-tone="done"] {
+    color: var(--foreground);
+    border-color: var(--border-strong);
+  }
+  .sv-badge[data-tone="done"]::before {
+    background: #f4f4f2;
+    border-color: transparent;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08);
+  }
+  .sv-badge[data-tone="warn"] {
+    color: #ffd08a;
+    border-color: rgba(255, 208, 138, 0.28);
+  }
+  .sv-badge[data-tone="warn"]::before {
+    background: #ffd08a;
+    border-color: transparent;
+  }
+  .sv-badge[data-tone="bad"] {
+    color: var(--destructive);
+    border-color: rgba(255, 122, 122, 0.3);
+  }
+  .sv-badge[data-tone="bad"]::before {
+    background: var(--destructive);
+    border-color: transparent;
+  }
+  .sv-empty {
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.012);
+    padding: 36px;
+    text-align: center;
+    color: var(--muted-foreground);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+}
+
+/* Faint scanline texture over the whole app, as on sevnsoul pages. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.11;
+  background-image: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.016) 0 1px, transparent 1px 3px);
+  mix-blend-mode: soft-light;
+}
+
+/* React Flow in the SevnSoul palette. */
+.react-flow {
+  --xy-background-color: transparent;
+  --xy-edge-stroke-default: rgba(244, 244, 242, 0.42);
+  --xy-edge-stroke-selected-default: #f4f4f2;
+  --xy-connectionline-stroke-default: #f4f4f2;
+  --xy-handle-background-color-default: #f4f4f2;
+  --xy-handle-border-color-default: #080808;
+  --xy-controls-button-background-color-default: #141414;
+  --xy-controls-button-background-color-hover-default: #1e1e1e;
+  --xy-controls-button-color-default: #f4f4f2;
+  --xy-controls-button-border-color-default: rgba(255, 255, 255, 0.075);
+  --xy-minimap-background-color-default: #0e0e0e;
+  --xy-attribution-background-color-default: transparent;
+}
+.react-flow__attribution {
+  opacity: 0.35;
+}
+.react-flow__edge-textbg {
+  fill: #0e0e0e;
+}
+.react-flow__edge-text {
+  fill: rgba(244, 244, 242, 0.58);
+  font-size: 10px;
+}
+.react-flow__controls {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: none;
+}
+.react-flow__minimap {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
 }

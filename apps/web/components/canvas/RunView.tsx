@@ -13,12 +13,14 @@ import { useRunSync } from "@/lib/sync/useRunSync";
 import { useSyncedNodes } from "@/lib/canvas/useSyncedNodes";
 import { cn } from "@/lib/utils";
 import { StageNodeView, type StageFlowNode } from "./StageNodeView";
-import { statusClass, statusLabel, typeLabel } from "./labels";
+import { statusLabel, statusTone, typeLabel } from "./labels";
 
 const nodeTypes = { stage: StageNodeView };
 
 interface Props {
   projectId: string;
+  projectName: string;
+  workflowId: string | null;
   runId: string;
   runName: string;
   snapshot: Snapshot;
@@ -26,7 +28,7 @@ interface Props {
   initialItems: RunItemRow[];
 }
 
-export function RunView({ projectId, runId, runName, snapshot, initialStored, initialItems }: Props) {
+export function RunView({ projectId, projectName, workflowId, runId, runName, snapshot, initialStored, initialItems }: Props) {
   const { items, stored, pending, online, error, setItemStatus, setStageStatus } = useRunSync({ runId, initialItems, initialStored });
   const [view, setView] = useState<"list" | "canvas">("canvas");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -52,6 +54,9 @@ export function RunView({ projectId, runId, runName, snapshot, initialStored, in
 
   const runView = useMemo(() => computeRunView(snapshot, stored, items), [snapshot, stored, items]);
   const stagesById = useMemo(() => new Map(snapshot.stages.map((s) => [s.id, s] as const)), [snapshot]);
+
+  const doneCount = items.filter((i) => i.status === "DONE").length;
+  const percent = items.length ? Math.round((doneCount / items.length) * 100) : 0;
 
   const toggleItem = (item: RunItemRow) => {
     if (runView.blockedBy[item.stage_id]) return; // locked: the reason is shown next to the stage
@@ -112,31 +117,57 @@ export function RunView({ projectId, runId, runName, snapshot, initialStored, in
   const selItems = selected ? items.filter((i) => i.stage_id === selected.id).sort((a, b) => a.sort_order - b.sort_order) : [];
 
   return (
-    <div className="flex h-dvh flex-col">
-      <header className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-3 py-2">
-        <Link href={`/projects/${projectId}`} className="text-sm text-muted-foreground hover:underline" aria-label="Kembali ke proyek">←</Link>
-        <h1 className="min-w-0 flex-1 truncate font-medium">{runName}</h1>
-        <div role="tablist" aria-label="Tampilan" className="flex rounded-lg border p-0.5 text-sm">
-          {(["list", "canvas"] as const).map((v) => (
-            <button
-              key={v}
-              role="tab"
-              aria-selected={view === v}
-              onClick={() => setView(v)}
-              className={cn("min-h-8 rounded-md px-3", view === v ? "bg-primary text-primary-foreground" : "text-muted-foreground")}
-            >
-              {v === "list" ? "Daftar" : "Peta"}
-            </button>
-          ))}
+    <div className="flex h-full flex-col">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border bg-background/60 px-4 py-2.5 md:px-6">
+        <nav aria-label="Jejak halaman" className="flex min-w-0 items-center gap-2 font-mono text-[10px] uppercase tracking-[0.12em] text-faint">
+          <Link href="/projects" className="hidden transition-colors hover:text-foreground sm:inline">Proyek</Link>
+          <span aria-hidden className="hidden sm:inline">/</span>
+          <Link href={`/projects/${projectId}`} className="max-w-28 truncate transition-colors hover:text-foreground">{projectName}</Link>
+          <span aria-hidden>/</span>
+          <span className="truncate text-muted-foreground">{runName}</span>
+        </nav>
+
+        <div className="flex items-center gap-2" aria-label={`${doneCount} dari ${items.length} selesai`}>
+          <div className="h-1 w-20 overflow-hidden rounded-full bg-white/10 sm:w-28">
+            <div className="h-full rounded-full bg-foreground transition-[width] duration-500" style={{ width: `${percent}%` }} />
+          </div>
+          <span className="font-mono text-[10px] text-muted-foreground">{doneCount}/{items.length}</span>
         </div>
-      </header>
+
+        <div className="ml-auto flex items-center gap-2">
+          {workflowId && (
+            <Link
+              href={`/projects/${projectId}/workflows/${workflowId}`}
+              className="hidden rounded-lg px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground md:inline"
+            >
+              Ubah alur kerja
+            </Link>
+          )}
+          <div role="tablist" aria-label="Tampilan" className="flex rounded-xl border border-border-strong p-0.5 text-sm">
+            {(["list", "canvas"] as const).map((v) => (
+              <button
+                key={v}
+                role="tab"
+                aria-selected={view === v}
+                onClick={() => setView(v)}
+                className={cn("min-h-8 rounded-[10px] px-3.5 transition-colors", view === v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
+              >
+                {v === "list" ? "Daftar" : "Peta"}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
 
       {(!online || pending > 0) && (
-        <div role="status" className={cn("border-b px-3 py-1.5 text-sm", online ? "bg-muted" : "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200")}>
+        <div
+          role="status"
+          className={cn("border-b px-4 py-2 text-sm md:px-6", online ? "border-border bg-secondary text-muted-foreground" : "border-[#ffd08a]/25 bg-[#ffd08a]/10 text-[#ffd08a]")}
+        >
           {online ? `Mengirim ${pending} perubahan…` : `Tidak ada internet. ${pending ? `${pending} perubahan` : "Perubahan Anda"} akan dikirim otomatis saat tersambung lagi.`}
         </div>
       )}
-      {error && <div role="alert" className="border-b bg-destructive/10 px-3 py-1.5 text-sm text-destructive">{error}</div>}
+      {error && <div role="alert" className="border-b border-destructive/30 bg-destructive/10 px-4 py-2 text-sm text-destructive md:px-6">{error}</div>}
 
       {view === "list" ? (
         <div className="min-h-0 flex-1 overflow-y-auto">
@@ -172,31 +203,34 @@ export function RunView({ projectId, runId, runName, snapshot, initialStored, in
               }}
               onNodeClick={(_, n) => setSelectedId(n.id)}
               onPaneClick={() => setSelectedId(null)}
+              colorMode="dark"
               fitView
+              fitViewOptions={{ maxZoom: 1, padding: 0.25 }}
+              proOptions={{ hideAttribution: true }}
             >
-              <Background />
+              <Background gap={22} size={1.2} color="rgba(255,255,255,0.1)" />
               <Controls showInteractive={false} />
-              <MiniMap pannable zoomable nodeColor="#94a3b8" maskColor="rgba(0,0,0,0.08)" className="hidden md:block" />
+              <MiniMap pannable zoomable nodeColor="#3a3a3a" maskColor="rgba(0,0,0,0.6)" className="hidden md:block" />
             </ReactFlow>
           </div>
 
-          <aside className="max-h-[45vh] shrink-0 space-y-4 overflow-y-auto border-t p-3 md:max-h-none md:w-80 md:border-l md:border-t-0">
+          <aside className="max-h-[45vh] shrink-0 space-y-4 overflow-y-auto border-t border-border p-4 md:max-h-none md:w-80 md:border-l md:border-t-0">
             {!selected ? (
-              <p className="text-sm text-muted-foreground">Klik sebuah langkah untuk mengerjakannya. Langkah yang masih menunggu akan menunjukkan apa yang harus selesai dulu.</p>
+              <p className="text-sm leading-6 text-muted-foreground">
+                Klik sebuah langkah untuk mengerjakannya. Langkah yang masih menunggu akan menunjukkan apa yang harus selesai dulu.
+              </p>
             ) : (
               <>
                 <div>
-                  <div className="text-xs uppercase tracking-wide text-muted-foreground">{typeLabel[selected.type] ?? selected.type}</div>
-                  <h2 className="font-medium">{selected.name}</h2>
+                  <div className="sv-label">{typeLabel[selected.type] ?? selected.type}</div>
+                  <h2 className="mt-1 text-xl font-medium tracking-[-0.03em]">{selected.name}</h2>
                   {selStatus && selected.type !== "group" && (
-                    <span className={cn("mt-1 inline-block rounded px-1.5 py-0.5 text-xs", statusClass[selStatus] ?? "bg-secondary")}>
-                      {statusLabel[selStatus] ?? selStatus}
-                    </span>
+                    <span className="sv-badge mt-2" data-tone={statusTone[selStatus] ?? ""}>{statusLabel[selStatus] ?? selStatus}</span>
                   )}
                 </div>
                 {selBlocked && (
-                  <p className="rounded-lg border bg-muted p-2 text-sm">
-                    Belum bisa dikerjakan. Selesaikan dulu: <strong>{selBlocked.join(", ")}</strong>.
+                  <p className="rounded-xl border border-border-strong bg-secondary p-3 text-sm leading-6">
+                    Belum bisa dikerjakan. Selesaikan dulu: <strong className="font-medium">{selBlocked.join(", ")}</strong>.
                   </p>
                 )}
                 {selected.type === "checklist" && (
@@ -204,11 +238,11 @@ export function RunView({ projectId, runId, runName, snapshot, initialStored, in
                     {selItems.length === 0 && <li className="text-sm text-muted-foreground">Ceklis ini masih kosong.</li>}
                     {selItems.map((item) => (
                       <li key={item.id}>
-                        <label className={cn("flex items-center gap-2 rounded p-1.5 text-sm", selBlocked ? "opacity-50" : "cursor-pointer hover:bg-muted")}>
-                          <input type="checkbox" className="size-4" checked={item.status === "DONE"} disabled={!!selBlocked} onChange={() => toggleItem(item)} />
+                        <label className={cn("flex items-center gap-2.5 rounded-lg p-2 text-sm", selBlocked ? "opacity-50" : "cursor-pointer hover:bg-accent")}>
+                          <input type="checkbox" className="size-4 accent-[#f4f4f2]" checked={item.status === "DONE"} disabled={!!selBlocked} onChange={() => toggleItem(item)} />
                           <span className={cn("flex-1", item.status === "DONE" && "text-muted-foreground line-through")}>{item.title}</span>
-                          {item.qty > 1 && <span className="text-xs text-muted-foreground">×{item.qty}</span>}
-                          {item.due_date && <span className="text-xs text-muted-foreground">{item.due_date}</span>}
+                          {item.qty > 1 && <span className="font-mono text-[11px] text-muted-foreground">×{item.qty}</span>}
+                          {item.due_date && <span className="font-mono text-[11px] text-muted-foreground">{item.due_date}</span>}
                         </label>
                       </li>
                     ))}
@@ -218,10 +252,12 @@ export function RunView({ projectId, runId, runName, snapshot, initialStored, in
                   <div className="space-y-3">
                     {selected.type === "task" && selected.config.dueDate ? <p className="text-sm">Tenggat: {String(selected.config.dueDate)}</p> : null}
                     {(selected.config.notes || selected.config.body) ? (
-                      <p className="whitespace-pre-wrap text-sm">{String(selected.config.notes ?? selected.config.body)}</p>
+                      <p className="whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{String(selected.config.notes ?? selected.config.body)}</p>
                     ) : null}
                     <div className="flex flex-wrap gap-2">
-                      <Button size="sm" variant="outline" disabled={!!selBlocked || selStatus === "DOING"} onClick={() => fireEvent(selected.id, "SET_DOING")}>Mulai</Button>
+                      {selected.type === "task" && (
+                        <Button size="sm" variant="outline" disabled={!!selBlocked || selStatus === "DOING"} onClick={() => fireEvent(selected.id, "SET_DOING")}>Mulai</Button>
+                      )}
                       <Button size="sm" disabled={!!selBlocked || selStatus === "DONE"} onClick={() => fireEvent(selected.id, "SET_DONE")}>Selesai</Button>
                       <Button size="sm" variant="ghost" disabled={!!selBlocked || (selStatus !== "DOING" && selStatus !== "DONE")} onClick={() => fireEvent(selected.id, "SET_TODO")}>Reset</Button>
                     </div>

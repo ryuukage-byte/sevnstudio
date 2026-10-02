@@ -9,11 +9,12 @@ export default async function RunPage({ params }: PageProps<"/projects/[projectI
   const supabase = await createClient();
   const { data: run } = await supabase
     .from("runs")
-    .select("id, name, snapshot")
+    .select("id, name, snapshot, workflow_id")
     .eq("id", runId)
     .eq("project_id", projectId)
     .maybeSingle();
   if (!run) notFound();
+  const { data: project } = await supabase.from("projects").select("name").eq("id", projectId).maybeSingle();
 
   const [stageRuns, items] = await Promise.all([
     supabase.from("stage_runs").select("stage_id, status").eq("run_id", runId),
@@ -28,6 +29,8 @@ export default async function RunPage({ params }: PageProps<"/projects/[projectI
       projectId={projectId}
       runId={runId}
       runName={run.name}
+      projectName={(project?.name as string | undefined) ?? "Proyek"}
+      workflowId={(run.workflow_id as string | null) ?? null}
       snapshot={snapshotSchema.parse(run.snapshot)}
       initialStored={stored}
       initialItems={(items.data ?? []) as RunItemRow[]}

@@ -2,7 +2,7 @@
 
 import { Handle, NodeToolbar, Position, type Node, type NodeProps } from "@xyflow/react";
 import { cn } from "@/lib/utils";
-import { statusClass, statusLabel, typeLabel } from "./labels";
+import { statusLabel, statusTone, typeLabel } from "./labels";
 
 export interface StageNodeData extends Record<string, unknown> {
   name: string;
@@ -25,35 +25,40 @@ export function StageNodeView({ data, selected }: NodeProps<StageFlowNode>) {
   return (
     <div
       className={cn(
-        "w-52 rounded-lg border bg-card px-3 py-2 text-card-foreground shadow-sm",
-        isGroup && "border-dashed bg-muted/50",
-        selected && "ring-2 ring-ring",
-        data.status === "LOCKED" && "opacity-70",
+        "w-56 rounded-2xl border bg-[linear-gradient(145deg,#151515,#0e0e0e)] px-3.5 py-3 text-card-foreground shadow-[0_14px_30px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.025)] transition-[border-color,box-shadow] duration-300",
+        selected ? "border-white/40 shadow-[0_0_0_3px_rgba(255,255,255,0.06),0_14px_30px_rgba(0,0,0,0.3)]" : "border-border-strong",
+        isGroup && "border-dashed bg-white/[0.02] bg-none",
+        data.status === "LOCKED" && "opacity-60",
       )}
     >
       {data.onEdit && data.onDelete && (
-        <NodeToolbar isVisible={selected} position={Position.Top} offset={8} className="flex gap-1 rounded-lg border bg-card p-1 shadow-md">
-          <button type="button" className="rounded px-2.5 py-1 text-sm hover:bg-muted" onClick={data.onEdit}>Ubah</button>
-          <button type="button" className="rounded px-2.5 py-1 text-sm text-destructive hover:bg-destructive/10" onClick={data.onDelete}>Hapus</button>
+        <NodeToolbar
+          isVisible={selected}
+          position={Position.Top}
+          offset={10}
+          className="flex gap-0.5 rounded-xl border border-border-strong bg-popover p-1 shadow-xl"
+        >
+          <button type="button" className="rounded-lg px-3 py-1.5 text-sm transition-colors hover:bg-accent" onClick={data.onEdit}>
+            Ubah
+          </button>
+          <button type="button" className="rounded-lg px-3 py-1.5 text-sm text-destructive transition-colors hover:bg-destructive/10" onClick={data.onDelete}>
+            Hapus
+          </button>
         </NodeToolbar>
       )}
       {!isGroup && <Handle type="target" position={Position.Left} />}
-      <div className="flex items-center justify-between gap-2">
-        <span className="truncate text-sm font-medium">{data.name}</span>
-        <span className="shrink-0 text-[10px] uppercase tracking-wide text-muted-foreground">
-          {typeLabel[data.type] ?? data.type}
-        </span>
-      </div>
-      {data.groupName && <div className="mt-1 text-xs text-muted-foreground">Kelompok: {data.groupName}</div>}
+      <div className="sv-label mb-1.5">{typeLabel[data.type] ?? data.type}</div>
+      <div className="truncate font-[family-name:var(--font-heading)] text-[17px] font-medium leading-tight tracking-[-0.03em]">{data.name}</div>
+      {data.groupName && <div className="mt-1.5 truncate text-xs text-muted-foreground">Kelompok: {data.groupName}</div>}
       {data.status && (
-        <div className="mt-2 flex items-center gap-2">
-          <span className={cn("rounded px-1.5 py-0.5 text-xs", statusClass[data.status] ?? "bg-secondary")}>
+        <div className="mt-3 flex items-center gap-2">
+          <span className="sv-badge" data-tone={statusTone[data.status] ?? ""}>
             {statusLabel[data.status] ?? data.status}
           </span>
-          {data.progress && <span className="text-xs text-muted-foreground">{data.progress}</span>}
+          {data.progress && <span className="font-mono text-[10px] text-muted-foreground">{data.progress}</span>}
         </div>
       )}
-      {data.lockReason && <div className="mt-1 text-xs text-muted-foreground">{data.lockReason}</div>}
+      {data.lockReason && <div className="mt-2 text-xs leading-snug text-muted-foreground">{data.lockReason}</div>}
       {!isGroup && <Handle type="source" position={Position.Right} />}
     </div>
   );

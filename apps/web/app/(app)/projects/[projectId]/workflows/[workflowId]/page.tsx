@@ -13,6 +13,7 @@ export default async function WorkflowPage({ params }: PageProps<"/projects/[pro
     .eq("project_id", projectId)
     .maybeSingle();
   if (!workflow) notFound();
+  const { data: project } = await supabase.from("projects").select("name").eq("id", projectId).maybeSingle();
 
   const [stages, edges] = await Promise.all([
     supabase.from("stages").select("*").eq("workflow_id", workflowId).order("created_at"),
@@ -28,6 +29,7 @@ export default async function WorkflowPage({ params }: PageProps<"/projects/[pro
       projectId={projectId}
       workflowId={workflowId}
       workflowName={workflow.name}
+      projectName={(project?.name as string | undefined) ?? "Proyek"}
       initial={{
         stages: (stages.data ?? []) as StageRow[],
         edges: (edges.data ?? []) as EdgeRow[],

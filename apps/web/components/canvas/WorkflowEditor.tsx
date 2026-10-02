@@ -17,9 +17,9 @@ import {
   applyOps, deleteStageOps, emptyHistory, pushCommand, redo, undo,
   type EditorState, type Op, type StageRow,
 } from "@/lib/editor/state";
-import { saveTemplate, startRunFromWorkflow } from "@/app/projects/actions";
+import { saveTemplate, startRunFromWorkflow } from "@/app/(app)/projects/actions";
 import { StageNodeView, type StageFlowNode } from "./StageNodeView";
-import { StageDialog } from "./StageDialog";
+import { PromptDialog, StageDialog } from "./StageDialog";
 import { StageWorkspace } from "./StageWorkspace";
 import { typeLabel } from "./labels";
 
@@ -39,10 +39,11 @@ interface Props {
   projectId: string;
   workflowId: string;
   workflowName: string;
+  projectName: string;
   initial: EditorState;
 }
 
-export function WorkflowEditor({ projectId, workflowId, workflowName, initial }: Props) {
+export function WorkflowEditor({ projectId, workflowId, workflowName, projectName, initial }: Props) {
   const supabase = useMemo(() => createClient(), []);
   const [state, setState] = useState(initial);
   const [history, setHistory] = useState(emptyHistory);
@@ -50,6 +51,7 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, initial }:
   const [message, setMessage] = useState<string | null>(null);
   const [saveError, setSaveError] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [ask, setAsk] = useState<"template" | "run" | null>(null);
   const [edgeMenu, setEdgeMenu] = useState<{ id: string; sx: number; sy: number } | null>(null);
   const [menu, setMenu] = useState<{ sx: number; sy: number; fx: number; fy: number } | null>(null);
   const rfRef = useRef<{ screenToFlowPosition: (p: { x: number; y: number }) => { x: number; y: number } } | null>(null);
@@ -238,37 +240,27 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, initial }:
   };
 
   return (
-    <div className="flex h-screen flex-col">
-      <header className="flex flex-wrap items-center gap-2 border-b px-3 py-2">
-        <Link href={`/projects/${projectId}`} className="text-sm text-muted-foreground hover:underline">← Proyek</Link>
-        <h1 className="mr-2 font-medium">{workflowName}</h1>
-        <Button size="sm" variant="ghost" onClick={doUndo} disabled={!history.past.length}>Urungkan</Button>
-        <Button size="sm" variant="ghost" onClick={doRedo} disabled={!history.future.length}>Ulangi</Button>
-        <div className="ml-auto flex gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              const name = window.prompt("Nama template:", workflowName)?.trim();
-              if (name) afterFlush(async () => { await saveTemplate(workflowId, name); setMessage("Template tersimpan."); });
-            }}
-          >
-            Simpan sebagai template
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => {
-              const name = window.prompt("Nama pengerjaan (mis. Trip #1):", `${workflowName} #1`)?.trim();
-              if (name) afterFlush(() => startRunFromWorkflow(projectId, workflowId, name));
-            }}
-          >
-            Mulai kerjakan
-          </Button>
+    <div className="flex h-full flex-col">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border bg-background/60 px-4 py-2.5 md:px-6">
+        <nav aria-label="Jejak halaman" className="flex min-w-0 items-center gap-2 font-mono text-[10px] uppercase tracking-[0.12em] text-faint">
+          <Link href="/projects" className="transition-colors hover:text-foreground">Proyek</Link>
+          <span aria-hidden>/</span>
+          <Link href={`/projects/${projectId}`} className="max-w-32 truncate transition-colors hover:text-foreground">{projectName}</Link>
+          <span aria-hidden>/</span>
+          <span className="truncate text-muted-foreground">{workflowName}</span>
+        </nav>
+        <div className="flex items-center gap-1">
+          <Button size="sm" variant="ghost" onClick={doUndo} disabled={!history.past.length}>Urungkan</Button>
+          <Button size="sm" variant="ghost" onClick={doRedo} disabled={!history.future.length}>Ulangi</Button>
         </div>
-      </header>
+        <div className="ml-auto flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => setAsk("template")}>Simpan sebagai template</Button>
+          <Button size="sm" onClick={() => setAsk("run")}>Mulai kerjakan</Button>
+        </div>
+      </div>
 
       {(message || saveError) && (
-        <div role="status" className="border-b bg-muted px-3 py-1.5 text-sm">
+        <div role="status" className="border-b border-border bg-secondary px-4 py-2 text-sm md:px-6">
           {saveError ? "Perubahan gagal disimpan. Muat ulang halaman untuk melihat kondisi terakhir." : message}
         </div>
       )}
@@ -320,18 +312,21 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, initial }:
               );
             }}
             deleteKeyCode={null}
+            colorMode="dark"
             fitView
+            fitViewOptions={{ maxZoom: 1, padding: 0.25 }}
+            proOptions={{ hideAttribution: true }}
           >
-            <Background />
-            <Controls />
-            <MiniMap pannable zoomable nodeColor="#94a3b8" maskColor="rgba(0,0,0,0.08)" />
-            <Panel position="top-left" className="flex flex-wrap items-center gap-1 rounded-lg border bg-card p-1 shadow-sm">
-              <span className="px-2 text-xs text-muted-foreground">Tambah langkah:</span>
+            <Background gap={22} size={1.2} color="rgba(255,255,255,0.1)" />
+            <Controls showInteractive={false} />
+            <MiniMap pannable zoomable nodeColor="#3a3a3a" maskColor="rgba(0,0,0,0.6)" className="hidden md:block" />
+            <Panel position="top-left" className="flex flex-wrap items-center gap-1 rounded-2xl border border-border-strong bg-popover/90 p-1.5 shadow-xl backdrop-blur">
+              <span className="sv-label px-2">Tambah langkah</span>
               {stageTypes.map((t) => (
                 <Button key={t} size="sm" variant="ghost" onClick={() => addStage(t)}>{typeLabel[t]}</Button>
               ))}
             </Panel>
-            <Panel position="bottom-center" className="rounded-lg border bg-card/90 px-3 py-1.5 text-xs text-muted-foreground shadow-sm">
+            <Panel position="bottom-center" className="hidden rounded-xl border border-border bg-popover/80 px-3.5 py-2 text-xs text-muted-foreground backdrop-blur md:block">
               Klik langkah untuk Ubah atau Hapus · Klik dua kali area kosong untuk menambah · Tarik titik di tepi langkah untuk menghubungkan
             </Panel>
           </ReactFlow>
@@ -408,6 +403,31 @@ export function WorkflowEditor({ projectId, workflowId, workflowName, initial }:
         </div>
       </div>
 
+      {ask === "template" && (
+        <PromptDialog
+          title="Simpan sebagai template"
+          label="Nama template"
+          initial={workflowName}
+          confirmLabel="Simpan"
+          onClose={() => setAsk(null)}
+          onSubmit={(name) =>
+            afterFlush(async () => {
+              await saveTemplate(workflowId, name);
+              setMessage("Template tersimpan. Anda bisa memakainya dari halaman proyek.");
+            })
+          }
+        />
+      )}
+      {ask === "run" && (
+        <PromptDialog
+          title="Mulai kerjakan"
+          label="Nama pengerjaan"
+          initial={`${workflowName} #1`}
+          confirmLabel="Mulai"
+          onClose={() => setAsk(null)}
+          onSubmit={(name) => afterFlush(() => startRunFromWorkflow(projectId, workflowId, name))}
+        />
+      )}
       {editingStage && (
         <StageDialog title={`Ubah ${typeLabel[editingStage.type]?.toLowerCase() ?? "langkah"}`} onClose={() => setEditingId(null)}>
           <StageWorkspace state={state} stage={editingStage} commit={commit} apply={run} />
