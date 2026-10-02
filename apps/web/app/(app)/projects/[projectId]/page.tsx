@@ -27,24 +27,30 @@ export default async function ProjectPage({ params }: PageProps<"/projects/[proj
     <PageShell>
       <PageHero eyebrow="Proyek" title={project.name as string} crumbs={[{ label: "Proyek", href: "/projects" }, { label: project.name as string }]} />
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        {list.length > 1 ? (
-          <WorkflowMenu projectId={projectId} workflows={list} />
-        ) : list[0] ? (
-          <Link href={`/projects/${projectId}/workflows/${list[0].id}`} className={`${bigButton} sv-hover`}>
-            <span className="text-2xl font-medium tracking-[-0.035em]">Alur kerja</span>
-            <span className="sv-label" aria-hidden>Buka ↗</span>
-          </Link>
-        ) : (
-          <div className={`${bigButton} opacity-60`}>
-            <span className="text-2xl font-medium tracking-[-0.035em]">Alur kerja</span>
-            <span className="sv-label">Kosong</span>
-          </div>
-        )}
+      <div className="grid gap-x-4 gap-y-8 sm:grid-cols-2">
+        <div>
+          {list.length > 1 ? (
+            <WorkflowMenu projectId={projectId} workflows={list} />
+          ) : list[0] ? (
+            <Link href={`/projects/${projectId}/workflows/${list[0].id}`} className={`${bigButton} sv-hover`}>
+              <span className="text-2xl font-medium tracking-[-0.035em]">Alur kerja</span>
+              <span className="sv-label" aria-hidden>Buka ↗</span>
+            </Link>
+          ) : (
+            <div className={`${bigButton} opacity-60`}>
+              <span className="text-2xl font-medium tracking-[-0.035em]">Alur kerja</span>
+              <span className="sv-label">Kosong</span>
+            </div>
+          )}
+          <p className="mt-3 px-2 text-sm leading-6 text-muted-foreground">Susun langkah-langkahnya, lalu kerjakan satu per satu.</p>
+        </div>
 
-        <div aria-disabled="true" className={`${bigButton} cursor-not-allowed opacity-60`} title="Belum tersedia">
-          <span className="text-2xl font-medium tracking-[-0.035em]">Lihat live action</span>
-          <span className="sv-badge">Segera hadir</span>
+        <div>
+          <div aria-disabled="true" className={`${bigButton} cursor-not-allowed opacity-60`} title="Belum tersedia">
+            <span className="text-2xl font-medium tracking-[-0.035em]">Lihat live action</span>
+            <span className="sv-badge">Segera hadir</span>
+          </div>
+          <p className="mt-3 px-2 text-sm leading-6 text-muted-foreground">Nantinya menampilkan jalannya pekerjaan secara visual.</p>
         </div>
       </div>
     </PageShell>
