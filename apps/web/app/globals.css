@@ -185,6 +185,14 @@
   }
 }
 
+/* No visible scrollbars anywhere; scroll by wheel, trackpad, keyboard, or by holding and dragging (see components/DragScroll.tsx). */
+* {
+  scrollbar-width: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}
+
 /* Faint scanline texture over the whole app, as on sevnsoul pages. */
 body::before {
   content: "";

@@ -20,7 +20,7 @@ export function PageHero({
 }: {
   eyebrow: string;
   title: string;
-  description?: string;
+  description?: ReactNode;
   crumbs?: Crumb[];
   actions?: ReactNode;
 }) {
@@ -46,7 +46,7 @@ export function PageHero({
         <div className="min-w-0">
           <div className="sv-eyebrow mb-5">{eyebrow}</div>
           <h1 className="text-[clamp(34px,6vw,64px)] font-normal leading-[0.98] tracking-[-0.05em]">{title}</h1>
-          {description && <p className="mt-5 max-w-xl text-[15px] font-light leading-7 text-muted-foreground">{description}</p>}
+          {description && <div className="mt-5 max-w-xl text-[15px] font-light leading-7 text-muted-foreground">{description}</div>}
         </div>
         {actions}
       </div>

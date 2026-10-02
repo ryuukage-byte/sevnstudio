@@ -35,7 +35,7 @@ function seed(): Db {
 
   const projectId = id();
   const wfId = id();
-  db.projects.push({ id: projectId, owner_id: DEV_USER.id, name: "Trip Jepang Nov 2026 (contoh)", created_at: now(), updated_at: now() });
+  db.projects.push({ id: projectId, owner_id: DEV_USER.id, name: "Trip Jepang Nov 2026 (contoh)", description: "Persiapan perjalanan ke Jepang bulan November: dokumen, booking, dan packing.", created_at: now(), updated_at: now() });
   db.workflows.push({ id: wfId, project_id: projectId, name: "Travel Checklist", created_at: now(), updated_at: now() });
 
   const docs = id(), booking = id(), packing = id(), tips = id();

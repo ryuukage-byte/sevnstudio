@@ -3,7 +3,7 @@ import Link from "next/link";
 import { UserMenu } from "./UserMenu";
 
 /** Top navigation bar shown on every signed-in page (SevnSoul header: mark + spaced wordmark, mono labels). */
-export function AppHeader({ email }: { email: string | null }) {
+export function AppHeader({ email, name }: { email: string | null; name: string | null }) {
   return (
     <header className="z-30 shrink-0 border-b border-border bg-background/80 backdrop-blur-md">
       <div className="flex h-14 items-center gap-3 px-4 md:px-6">
@@ -22,7 +22,7 @@ export function AppHeader({ email }: { email: string | null }) {
         </nav>
 
         <div className="ml-auto">
-          <UserMenu email={email} />
+          <UserMenu email={email} name={name} />
         </div>
       </div>
     </header>

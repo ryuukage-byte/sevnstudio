@@ -47,7 +47,9 @@ export function createMockClient(exec: Exec): SupabaseClient {
     },
     rpc: (fn: string, args: unknown) => new Builder(exec, "", "rpc", args).with(fn),
     auth: {
-      getUser: async () => ({ data: { user: USER }, error: null }),
+      getUser: async () => ({ data: { user: { ...USER, user_metadata: {} } }, error: null }),
+      // Preview only: accepts the change but does not persist it.
+      updateUser: async () => ({ data: { user: { ...USER, user_metadata: {} } }, error: null }),
       signOut: async () => ({ error: null }),
       signInWithPassword: async () => ({ data: { user: USER }, error: null }),
       signUp: async () => ({ data: { user: USER, session: {} }, error: null }),
