@@ -2,3 +2,6 @@ packages:
   - apps/*
   - packages/*
   - worker
+allowBuilds:
+  esbuild: true
+  unrs-resolver: true

@@ -233,13 +233,73 @@ const eveningReset: Preset = {
   links: [...seq("input", "selesai", "banding", "hambatan", "tertunda", "besok", "siap", "pelajaran", "hasil"), ["aturan", "selesai", "flow"]],
 };
 
-/** Seven built-in presets: 3 otomatis, 2 semi-otomatis, 2 kehidupan sehari-hari. */
+const sevnquestDataFlow: Preset = {
+  key: "sevnquest-data-flow",
+  category: "semi",
+  title: "Alur Data & Sistem SevnQuest",
+  goal: "Memetakan relasi nyata antar komponen: dari mana data berasal hingga menjadi EXP & Progress.",
+  results: ["Peta lengkap sistem SevnQuest"],
+  stages: [
+    { key: "db_kotoba", type: "note", name: "DB: kotoba.json", text: "Berisi 7.3MB data kosakata statis Jepang." },
+    { key: "db_kanji", type: "note", name: "DB: kanji.json", text: "Berisi data stroke & reading kanji." },
+    
+    { key: "stage_hub", type: "task", name: "UI: StageHubView", text: "User masuk ke stage. Mengambil data dari JSON sesuai ID Stage." },
+    
+    { key: "mod_kotoba", type: "task", name: "Module: Kotoba", text: "Merender UI sesi Kotoba untuk player." },
+    { key: "mod_kanji", type: "task", name: "Module: Kanji", text: "Merender kanvas dengan Hanzi-Writer." },
+    
+    { key: "quiz_engine", type: "api", name: "Engine: Quiz & Randomizer", text: "Mengacak soal, mendeteksi tipe error (distractor), mengevaluasi jawaban user." },
+    
+    { key: "calc_mastery", type: "ai", name: "Logic: recordItemAttempt", text: "Kalkulasi Utama: Menghitung % Mastery baru, menjatuhkan EXP & Gold, serta menjadwalkan ulang SRS (nextReviewDue)." },
+    { key: "calc_activity", type: "ai", name: "Logic: recordStudyActivity", text: "Mencatat statistik aktivitas (cth: menjawab 50 soal hari ini) untuk misi." },
+    
+    { key: "state_stats", type: "checklist", name: "State: PlayerStats", items: ["EXP & Level (dari kalkulasi)", "ItemMasteryRecord (%)", "StudyStats (Aktivitas Harian)"] },
+    
+    { key: "ui_world", type: "task", name: "UI: WorldView", text: "Membaca state PlayerStats untuk merender bar penyelesaian Stage dan membuka map baru." },
+    { key: "ui_mission", type: "task", name: "UI: MissionsView", text: "Membaca StudyStats untuk memberikan reward / *claim* misi harian." },
+    
+    { key: "storage_local", type: "note", name: "localStorage", text: "Penyimpanan offline-first (React Local State -> usePersistence)." },
+    { key: "storage_cloud", type: "note", name: "Supabase DB", text: "Sistem Cloud Save statik (Backup progres pemain)." }
+  ],
+  links: [
+    // Alur Data ke UI
+    ["db_kotoba", "stage_hub", "flow"],
+    ["db_kanji", "stage_hub", "flow"],
+    
+    // Alur UI ke Modul Belajar
+    ["stage_hub", "mod_kotoba", "blocking"],
+    ["stage_hub", "mod_kanji", "blocking"],
+    
+    // Modul ke Logic Engine
+    ["mod_kotoba", "quiz_engine", "blocking"],
+    ["mod_kanji", "calc_mastery", "blocking"], 
+    
+    // Engine menyetor hasil ke Kalkulator
+    ["quiz_engine", "calc_mastery", "blocking"],
+    ["quiz_engine", "calc_activity", "flow"],
+    
+    // Kalkulator menembak ke State React
+    ["calc_mastery", "state_stats", "blocking"],
+    ["calc_activity", "state_stats", "flow"],
+    
+    // State memicu UI lain
+    ["state_stats", "ui_world", "flow"],
+    ["state_stats", "ui_mission", "flow"],
+    
+    // State memicu sistem Persistence
+    ["state_stats", "storage_local", "blocking"],
+    ["storage_local", "storage_cloud", "flow"]
+  ]
+};
+
+/** Eight built-in presets: 3 otomatis, 3 semi-otomatis, 2 kehidupan sehari-hari. */
 export const presets: readonly Preset[] = [
   contentFactory,
   knowledgeToAction,
   weeklyReport,
   projectLaunchpad,
   learnPractice,
+  sevnquestDataFlow,
   todayNavigator,
   eveningReset,
 ];
